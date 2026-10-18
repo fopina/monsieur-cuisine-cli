@@ -9,6 +9,8 @@ import json
 import os
 import secrets
 import string
+import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -244,18 +246,15 @@ def _wait_for_local_callback(redirect_uri: str) -> str:
     return callback['url']
 
 
-def _capture_browser_callback(auth_url: str, redirect_uri: str, browser_name: str | None) -> str:
-    """Open the OAuth page in Playwright and capture its custom-scheme redirect."""
+def _capture_browser_callback(auth_url: str, redirect_uri: str) -> str:
+    """Open Chromium through Playwright and capture its custom-scheme redirect."""
     try:
         from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
-        raise RuntimeError('Playwright is required for browser login. Install it with `pip install playwright` and run `playwright install chromium`.') from exc
+        raise RuntimeError('Playwright is required for managed-browser login. Install the project dependencies first.') from exc
 
     callback: dict[str, str] = {}
-    browser_type_name = (browser_name or 'chromium').lower()
-    if browser_type_name not in {'chromium', 'firefox', 'webkit'}:
-        raise RuntimeError('Playwright browser must be chromium, firefox, or webkit.')
 
     def maybe_capture(url: str | None) -> None:
         if url and url.startswith(redirect_uri) and not callback:
@@ -263,8 +262,14 @@ def _capture_browser_callback(auth_url: str, redirect_uri: str, browser_name: st
 
     try:
         with sync_playwright() as playwright:
-            browser_type = getattr(playwright, browser_type_name)
-            browser = browser_type.launch(headless=False)
+            chromium = playwright.chromium
+            if not Path(chromium.executable_path).is_file():
+                print('Playwright Chromium is missing; installing it now…')
+                try:
+                    subprocess.run([sys.executable, '-m', 'playwright', 'install', 'chromium'], check=True)
+                except (OSError, subprocess.CalledProcessError) as exc:
+                    raise RuntimeError(f'Could not install Playwright Chromium automatically: {exc}') from exc
+            browser = chromium.launch(headless=False)
             page = browser.new_page()
 
             def on_response(response):
@@ -290,15 +295,29 @@ def _capture_browser_callback(auth_url: str, redirect_uri: str, browser_name: st
                     break
             browser.close()
     except PlaywrightError as exc:
-        raise RuntimeError(f'Could not launch Playwright browser {browser_type_name!r}: {exc}. Install its browser with `playwright install {browser_type_name}`.') from exc
+        raise RuntimeError(f'Could not launch Playwright Chromium: {exc}.') from exc
     if not callback:
         raise RuntimeError('Timed out waiting for the OAuth callback in the Playwright browser.')
     return callback['url']
 
 
+def _capture_system_browser_callback(auth_url: str, redirect_uri: str) -> str:
+    """Open the system browser and ask the user to paste its final callback URL."""
+    import webbrowser
+
+    print('Opening Lidl sign-in in your system browser…')
+    if not webbrowser.open(auth_url):
+        print(f'Open this URL in your browser:\n{auth_url}')
+    print(f'After sign-in, copy the final URL beginning with {redirect_uri} and paste it below.')
+    try:
+        return input('Callback URL: ').strip()
+    except EOFError as exc:
+        raise RuntimeError('Could not read the callback URL from standard input.') from exc
+
+
 def login(
     language: str = 'pt-PT',
-    browser_name: str | None = None,
+    system_browser: bool = False,
     redirect_uri: str = DEFAULT_REDIRECT_URI,
 ) -> Path:
     """Authenticate using the mobile app's OIDC and API token-login flow."""
@@ -333,16 +352,14 @@ def login(
         print('Opening the Lidl sign-in page in your browser…')
         import webbrowser
 
-        try:
-            browser = webbrowser.get(browser_name) if browser_name else webbrowser
-        except webbrowser.Error as exc:
-            raise RuntimeError(f'Could not find browser {browser_name!r}. Try a browser name such as chrome, safari, or firefox.') from exc
-        if not browser.open(auth_url):
+        if not webbrowser.open(auth_url):
             print(f'Open this URL in a browser:\n{auth_url}')
         print(f'\nWaiting for the browser to return to {redirect_uri} …')
         redirect = _wait_for_local_callback(redirect_uri)
+    elif system_browser:
+        redirect = _capture_system_browser_callback(auth_url, redirect_uri)
     else:
-        redirect = _capture_browser_callback(auth_url, redirect_uri, browser_name)
+        redirect = _capture_browser_callback(auth_url, redirect_uri)
     query = _callback_params(redirect, redirect_uri)
     returned_state = query.get('state', [''])[0]
     if not secrets.compare_digest(returned_state, state):

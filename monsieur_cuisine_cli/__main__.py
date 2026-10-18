@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     auth_commands = auth.add_subparsers(dest='auth_command', required=True)
     login_parser = auth_commands.add_parser('login', help='Sign in through the Monsieur Cuisine mobile app OAuth flow.')
     login_parser.add_argument('--language', default='pt-PT', help='sign-in locale (default: pt-PT)')
-    login_parser.add_argument('--browser', help='Playwright browser engine: chromium, firefox, or webkit (default: chromium)')
+    login_parser.add_argument('--browser', action='store_true', help='Use the system browser and paste the final mobile callback URL manually.')
     login_parser.add_argument('--redirect-uri', default='lidl-com.monsieur-cuisine.companion://login/prod', help='OAuth callback URI (default: mobile app URI)')
     auth_commands.add_parser('status', help='Check whether an account session is saved locally.')
     auth_commands.add_parser('logout', help='Remove the saved account session.')

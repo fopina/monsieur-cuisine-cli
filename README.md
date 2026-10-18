@@ -10,7 +10,6 @@ This project uses [uv](https://docs.astral.sh/uv/) for Python environment and de
 
 ```sh
 uv sync --dev
-uv run playwright install chromium
 ```
 
 ## Sign in
@@ -21,7 +20,15 @@ Start the Lidl OAuth login flow used by the Monsieur Cuisine Android app:
 uv run monsieur-cuisine auth login
 ```
 
-Complete sign-in and any reCAPTCHA challenge in the browser opened by Playwright. The CLI captures the app's OAuth callback, exchanges the authorization code, and performs the app's encrypted API login.
+By default, login opens its own visible Chromium window through Playwright and captures the app's OAuth callback automatically. If Playwright Chromium is missing, the CLI runs `python -m playwright install chromium` automatically before opening the browser. Complete sign-in and any reCAPTCHA challenge there; the CLI then exchanges the authorization code and performs the app's encrypted API login.
+
+To use your system browser instead, pass the boolean `--browser` flag:
+
+```sh
+uv run monsieur-cuisine auth login --browser
+```
+
+After sign-in, copy the final redirect URL beginning with `lidl-com.monsieur-cuisine.companion://` and paste it into the terminal prompt. Depending on the browser, you may need to copy the URL from its address bar or redirect/error page. The CLI validates the callback's scheme, path, and OAuth `state` before exchanging the one-time authorization code.
 
 The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow uses the mobile app's registered deep link by default. A loopback callback can be tried explicitly with `--redirect-uri http://localhost:3000`; Lidl may reject it because redirect URIs are configured server-side.
 
