@@ -6,8 +6,6 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-from html import unescape
-from html.parser import HTMLParser
 
 from .auth import call_api
 
@@ -15,30 +13,6 @@ _RECIPE_ID = re.compile(r'["\']?recipeId["\']?\s*:\s*["\']?(\d+)', re.IGNORECASE
 _VIEWER_LANG = re.compile(
     r'["\']?viewer-lang["\']?\s*[:=]\s*["\']?([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)', re.IGNORECASE
 )
-
-
-class _RecipePageParser(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.scripts: list[str] = []
-        self._script_parts: list[str] | None = None
-        self.html_language: str | None = None
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        values = dict(attrs)
-        if tag == 'html':
-            self.html_language = values.get('lang') or self.html_language
-        if tag == 'script':
-            self._script_parts = []
-
-    def handle_data(self, data: str) -> None:
-        if self._script_parts is not None:
-            self._script_parts.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == 'script' and self._script_parts is not None:
-            self.scripts.append(''.join(self._script_parts))
-            self._script_parts = None
 
 
 def _recipe_page_metadata(url: str) -> tuple[str, str]:
@@ -65,17 +39,12 @@ def _recipe_page_metadata(url: str) -> tuple[str, str]:
     except urllib.error.URLError as exc:
         raise RuntimeError(f'Could not reach recipe page {url}: {exc.reason}') from exc
 
-    parser = _RecipePageParser()
-    parser.feed(page)
-    scripts = unescape('\n'.join(parser.scripts))
-    recipe_match = _RECIPE_ID.search(scripts)
+    recipe_match = _RECIPE_ID.search(page)
     if not recipe_match:
         raise RuntimeError('Recipe page did not contain a recipeId in its script data.')
 
-    language_match = _VIEWER_LANG.search(scripts)
-    viewer_language = language_match.group(1) if language_match else parser.html_language
-    if not viewer_language:
-        viewer_language = segments[0]
+    language_match = _VIEWER_LANG.search(page)
+    viewer_language = language_match.group(1) if language_match else segments[0]
     # The site path uses lowercase locale tags (pt-pt); the API expects `pt-PT`.
     parts = viewer_language.split('-')
     viewer_language = '-'.join([parts[0].lower(), *(part.upper() if len(part) == 2 else part for part in parts[1:])])
