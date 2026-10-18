@@ -32,7 +32,7 @@ uv run monsieur-cuisine auth login --browser
 
 After sign-in, copy the final redirect URL beginning with `lidl-com.monsieur-cuisine.companion://` and paste it into the terminal prompt. Depending on the browser, you may need to copy the URL from its address bar or redirect/error page. The CLI validates the callback's scheme, path, and OAuth `state` before exchanging the one-time authorization code.
 
-The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow always uses the mobile app's registered deep link and requests the Portuguese locale (`Language=pt-PT`, `CountryCode=PT`). Omitting these parameters displayed Lidl's login page in German during a browser check.
+The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow always uses the mobile app's registered deep link and requests the English (UK) locale (`Language=en-GB`, `CountryCode=GB`).
 
 Check or clear the saved session:
 

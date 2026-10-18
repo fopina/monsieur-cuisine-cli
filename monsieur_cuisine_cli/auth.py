@@ -302,8 +302,8 @@ def login(
         'code_challenge': challenge,
         'code_challenge_method': 'S256',
         'prompt': 'login',
-        'CountryCode': 'PT',
-        'Language': 'pt-PT',
+        'CountryCode': 'GB',
+        'Language': 'en-GB',
     }
     auth_url = f'{authorization_endpoint}?{urllib.parse.urlencode(params)}'
     if system_browser:
