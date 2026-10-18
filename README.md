@@ -42,7 +42,7 @@ uv run monsieur-cuisine profile
 uv run monsieur-cuisine auth logout
 ```
 
-`auth status` reports whether a session file is saved and, when the OAuth token expiry is available, its expiry time in your local timezone.
+`auth status` reports whether a session file is saved, the account name when available, and the OAuth token expiry in your local timezone.
 
 ## Configuration
 

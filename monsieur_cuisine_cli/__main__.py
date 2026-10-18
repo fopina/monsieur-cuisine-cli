@@ -60,6 +60,12 @@ class Status(Auth.Command):
             click.echo('Token expiry: unavailable (could not read the session file).')
             return
 
+        user = session.get('user')
+        name = user.get('displayName') if isinstance(user, dict) else None
+        if not name and isinstance(user, dict):
+            name = ' '.join(part for part in (user.get('firstName'), user.get('lastName')) if part)
+        click.echo(f'Account: {name or "name unavailable"}')
+
         expires_at = session.get('oauthAccessTokenExpiresAt')
         if expires_at is None:
             click.echo('Token expiry: unavailable.')
