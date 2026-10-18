@@ -1,5 +1,3 @@
 # Defaults for `monsieur-cuisine auth login`.
 [auth.login]
-language = 'pt-PT'
 browser = false
-redirect_uri = 'lidl-com.monsieur-cuisine.companion://login/prod'

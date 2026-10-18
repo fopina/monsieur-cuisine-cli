@@ -29,16 +29,11 @@ class Auth(CLI.SubGroup):
 class Login(Auth.Command):
     """Sign in through Lidl's account login."""
 
-    language: str = classyclick.Option(default='pt-PT', help='Sign-in locale (default: pt-PT).')
     browser: bool = classyclick.Option(default=False, help='Use the system browser and paste the final mobile callback URL.')
-    redirect_uri: str = classyclick.Option(
-        default='lidl-com.monsieur-cuisine.companion://login/prod',
-        help='OAuth callback URI (default: mobile app URI).',
-    )
 
     def __call__(self):
         try:
-            login(language=self.language, system_browser=self.browser, redirect_uri=self.redirect_uri)
+            login(system_browser=self.browser)
         except KeyboardInterrupt as exc:
             raise click.Abort() from exc
         except RuntimeError as exc:

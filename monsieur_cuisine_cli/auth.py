@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import http.server
 import json
 import os
 import secrets
@@ -28,7 +27,6 @@ CLIENT_ID = 'monsieurcuisineappcompanionclient'
 # AppAuth's ClientSecretBasic value, bundled in the mobile app at hf/i.smali.
 CLIENT_SECRET = '12F42561-7F71-43D7-964A-4B2B1E2B19C3'
 REDIRECT_URI = 'lidl-com.monsieur-cuisine.companion://login/prod'
-DEFAULT_REDIRECT_URI = REDIRECT_URI
 API_BASE = 'https://mc-api.tecpal.com'
 KEY_ID = '351756051523999'
 PREPROD_KEY = '3afe90d2-7b78-434c-a174-8274c370dc11'
@@ -200,53 +198,17 @@ def get_profile() -> dict:
     return _api_data(response)
 
 
-def _callback_params(redirect: str, redirect_uri: str) -> dict[str, list[str]]:
+def _callback_params(redirect: str) -> dict[str, list[str]]:
     parsed = urllib.parse.urlparse(redirect)
-    expected = urllib.parse.urlparse(redirect_uri)
+    expected = urllib.parse.urlparse(REDIRECT_URI)
     actual_base = parsed._replace(query='', fragment='').geturl().rstrip('/')
     expected_base = expected._replace(query='', fragment='').geturl().rstrip('/')
     if actual_base != expected_base:
-        raise RuntimeError(f'The returned URL does not match the requested redirect URI {redirect_uri!r}.')
+        raise RuntimeError(f'The returned URL does not match the app callback {REDIRECT_URI!r}.')
     return urllib.parse.parse_qs(parsed.query)
 
 
-def _wait_for_local_callback(redirect_uri: str) -> str:
-    parsed = urllib.parse.urlparse(redirect_uri)
-    if parsed.scheme != 'http' or parsed.hostname not in {'localhost', '127.0.0.1'}:
-        raise RuntimeError('Automatic callback is supported only for http://localhost or http://127.0.0.1 redirect URIs.')
-    port = parsed.port or 80
-    expected_path = parsed.path or '/'
-    callback: dict[str, str] = {}
-
-    class Handler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.path.split('?', 1)[0] != expected_path:
-                self.send_error(404)
-                return
-            callback['url'] = f'{redirect_uri}{"&" if "?" in redirect_uri else "?"}{self.path.partition("?")[2]}'
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'Login received. You can return to the CLI.\n')
-
-        def log_message(self, _format, *_args):
-            pass
-
-    try:
-        server = http.server.HTTPServer(('127.0.0.1', port), Handler)
-    except OSError as exc:
-        raise RuntimeError(f'Could not listen on 127.0.0.1:{port}: {exc}') from exc
-    server.timeout = 180
-    try:
-        server.handle_request()
-    finally:
-        server.server_close()
-    if not callback:
-        raise RuntimeError('Timed out waiting for the browser callback.')
-    return callback['url']
-
-
-def _capture_browser_callback(auth_url: str, redirect_uri: str) -> str:
+def _capture_browser_callback(auth_url: str) -> str:
     """Open Chromium through Playwright and capture its custom-scheme redirect."""
     try:
         from playwright.sync_api import Error as PlaywrightError
@@ -257,7 +219,7 @@ def _capture_browser_callback(auth_url: str, redirect_uri: str) -> str:
     callback: dict[str, str] = {}
 
     def maybe_capture(url: str | None) -> None:
-        if url and url.startswith(redirect_uri) and not callback:
+        if url and url.startswith(REDIRECT_URI) and not callback:
             callback['url'] = url
 
     try:
@@ -301,14 +263,14 @@ def _capture_browser_callback(auth_url: str, redirect_uri: str) -> str:
     return callback['url']
 
 
-def _capture_system_browser_callback(auth_url: str, redirect_uri: str) -> str:
+def _capture_system_browser_callback(auth_url: str) -> str:
     """Open the system browser and ask the user to paste its final callback URL."""
     import webbrowser
 
     print('Opening Lidl sign-in in your system browser…')
     if not webbrowser.open(auth_url):
         print(f'Open this URL in your browser:\n{auth_url}')
-    print(f'After sign-in, copy the final URL beginning with {redirect_uri} and paste it below.')
+    print(f'After sign-in, copy the final URL beginning with {REDIRECT_URI} and paste it below.')
     try:
         return input('Callback URL: ').strip()
     except EOFError as exc:
@@ -316,9 +278,7 @@ def _capture_system_browser_callback(auth_url: str, redirect_uri: str) -> str:
 
 
 def login(
-    language: str = 'pt-PT',
     system_browser: bool = False,
-    redirect_uri: str = DEFAULT_REDIRECT_URI,
 ) -> Path:
     """Authenticate using the mobile app's OIDC and API token-login flow."""
     discovery = _request(f'{ISSUER}/.well-known/openid-configuration')
@@ -332,10 +292,9 @@ def login(
     nonce = secrets.token_urlsafe(32)
     verifier = _b64url(secrets.token_bytes(32))
     challenge = _b64url(hashlib.sha256(verifier.encode('ascii')).digest())
-    country = language.rsplit('-', 1)[-1].upper()
     params = {
         'client_id': CLIENT_ID,
-        'redirect_uri': redirect_uri,
+        'redirect_uri': REDIRECT_URI,
         'response_type': 'code',
         'scope': 'openid profile offline_access',
         'state': state,
@@ -343,24 +302,15 @@ def login(
         'code_challenge': challenge,
         'code_challenge_method': 'S256',
         'prompt': 'login',
-        'CountryCode': country,
-        'Language': language,
+        'CountryCode': 'PT',
+        'Language': 'pt-PT',
     }
     auth_url = f'{authorization_endpoint}?{urllib.parse.urlencode(params)}'
-    local_http = urllib.parse.urlparse(redirect_uri)
-    if local_http.scheme == 'http' and local_http.hostname in {'localhost', '127.0.0.1'}:
-        print('Opening the Lidl sign-in page in your browser…')
-        import webbrowser
-
-        if not webbrowser.open(auth_url):
-            print(f'Open this URL in a browser:\n{auth_url}')
-        print(f'\nWaiting for the browser to return to {redirect_uri} …')
-        redirect = _wait_for_local_callback(redirect_uri)
-    elif system_browser:
-        redirect = _capture_system_browser_callback(auth_url, redirect_uri)
+    if system_browser:
+        redirect = _capture_system_browser_callback(auth_url)
     else:
-        redirect = _capture_browser_callback(auth_url, redirect_uri)
-    query = _callback_params(redirect, redirect_uri)
+        redirect = _capture_browser_callback(auth_url)
+    query = _callback_params(redirect)
     returned_state = query.get('state', [''])[0]
     if not secrets.compare_digest(returned_state, state):
         raise RuntimeError('OAuth state did not match. Start login again.')
@@ -377,7 +327,7 @@ def login(
         {
             'grant_type': 'authorization_code',
             'client_id': CLIENT_ID,
-            'redirect_uri': redirect_uri,
+            'redirect_uri': REDIRECT_URI,
             'code': code,
             'code_verifier': verifier,
         },

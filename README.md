@@ -32,7 +32,7 @@ uv run monsieur-cuisine auth login --browser
 
 After sign-in, copy the final redirect URL beginning with `lidl-com.monsieur-cuisine.companion://` and paste it into the terminal prompt. Depending on the browser, you may need to copy the URL from its address bar or redirect/error page. The CLI validates the callback's scheme, path, and OAuth `state` before exchanging the one-time authorization code.
 
-The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow uses the mobile app's registered deep link by default. A loopback callback can be tried explicitly with `--redirect-uri http://localhost:3000`; Lidl may reject it because redirect URIs are configured server-side.
+The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow always uses the mobile app's registered deep link and requests the Portuguese locale (`Language=pt-PT`, `CountryCode=PT`). Omitting these parameters displayed Lidl's login page in German during a browser check.
 
 Check or clear the saved session:
 
@@ -51,7 +51,7 @@ uv run monsieur-cuisine config
 uv run monsieur-cuisine config --edit
 ```
 
-The example config stores defaults under `[auth.login]`, including `language`, `browser`, and `redirect_uri`. Command-line options override config values. Use the root `--config PATH` option to select a different file, or `--env NAME` to merge a named `[env.NAME]` section.
+The example config stores the `browser` setting under `[auth.login]`. Command-line options override config values. Use the root `--config PATH` option to select a different file, or `--env NAME` to merge a named `[env.NAME]` section.
 
 ## Planned capabilities
 
