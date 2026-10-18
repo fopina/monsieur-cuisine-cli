@@ -259,7 +259,9 @@ def _capture_browser_callback(auth_url: str) -> str:
         from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
-        raise RuntimeError('Playwright is required for managed-browser login. Install the project dependencies first.') from exc
+        raise RuntimeError(
+            'Playwright is required for managed-browser login. Install the project dependencies first.'
+        ) from exc
 
     callback: dict[str, str] = {}
 
