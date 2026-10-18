@@ -196,6 +196,30 @@ wheels = [
 ]
 
 [[package]]
+name = "classyclick"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "platformdirs" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/34/86/3ea5c8b7c705034bf46adb058b740ea773a4b4e8af736b64cee3ab9b078c/classyclick-1.0.3.tar.gz", hash = "sha256:2f7274fd81a7d47238bb66b5fdc594d0a29dcccae047fc6a20552daa5861f0b8", size = 27805, upload-time = "2026-05-04T08:38:45.282Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/4c/eff97a80ca395598aef786ccf946100ce1025aca7af5334795714d66f91f/classyclick-1.0.3-py3-none-any.whl", hash = "sha256:a18aeff3ac241f497553f8a42a7c5453c5a6838a1d53e2dacb1b73d717718622", size = 17975, upload-time = "2026-05-04T08:38:44.148Z" },
+]
+
+[[package]]
+name = "click"
+version = "8.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -616,6 +640,8 @@ wheels = [
 name = "monsieur-cuisine-cli"
 source = { editable = "." }
 dependencies = [
+    { name = "classyclick" },
+    { name = "click" },
     { name = "cryptography" },
     { name = "playwright" },
 ]
@@ -631,6 +657,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "classyclick", specifier = ">=1.0.0" },
+    { name = "click", specifier = ">=8.1" },
     { name = "cryptography", specifier = ">=43.0" },
     { name = "playwright", specifier = ">=1.50" },
 ]
@@ -694,6 +722,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/65/ee/299d360cdc32edc7d2cf530f3accf79c4fca01e96ffc950d8a52213bd8e4/packaging-26.0.tar.gz", hash = "sha256:00243ae351a257117b6a241061796684b084ed1c516a08c48a3f7e147a9d80b4", size = 143416, upload-time = "2026-01-21T20:50:39.064Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/b9/c538f279a4e237a006a2c98387d081e9eb060d203d8ed34467cc0f0b9b53/packaging-26.0-py3-none-any.whl", hash = "sha256:b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529", size = 74366, upload-time = "2026-01-21T20:50:37.788Z" },
+]
+
+[[package]]
+name = "platformdirs"
+version = "4.11.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/18/f3bb8ef0d3b930692343da8aa4d3cbcd6749477c053959395ac81965a6e9/platformdirs-4.11.8.tar.gz", hash = "sha256:f23abafea7dd4276d1f29104b83598d7dcc567cafd07c9c951e66665645437fc", size = 37182, upload-time = "2026-09-08T22:20:42.866Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f4/e1/5b7b8bbb55084d1425bcb9bc823ff519e1b2be05f6ebb0089e2eacc38413/platformdirs-4.11.8-py3-none-any.whl", hash = "sha256:52f2f181bbfde907966932cc8312d967d02976422d66d537ea16092b8e291081", size = 24027, upload-time = "2026-09-08T22:20:41.537Z" },
 ]
 
 [[package]]

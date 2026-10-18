@@ -4,6 +4,8 @@ A command-line client for managing recipes in a monsieur-cuisine.com account.
 
 This project is at an early stage. Account sign-in and a read-only profile command are implemented; recipe management commands are planned.
 
+The command tree is built with [classyclick](https://github.com/fopina/classyclick), a class-based wrapper around Click.
+
 ## Install for development
 
 This project uses [uv](https://docs.astral.sh/uv/) for Python environment and dependency management.
