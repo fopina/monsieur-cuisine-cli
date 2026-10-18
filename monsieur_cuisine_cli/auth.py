@@ -198,6 +198,49 @@ def get_profile() -> dict:
     return _api_data(response)
 
 
+def renew() -> Path:
+    """Use the saved OAuth refresh token and persist the renewed OAuth tokens."""
+    path = _session_path()
+    try:
+        session = json.loads(path.read_text(encoding='utf-8'))
+    except FileNotFoundError as exc:
+        raise RuntimeError('No saved session. Run `monsieur-cuisine auth login` first.') from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f'Saved session at {path} could not be read as valid JSON.') from exc
+
+    refresh_token = session.get('oauthRefreshToken')
+    if not refresh_token:
+        raise RuntimeError('The saved session has no OAuth refresh token. Run `monsieur-cuisine auth login` again.')
+
+    discovery = _request(f'{ISSUER}/.well-known/openid-configuration')
+    token_endpoint = discovery.get('token_endpoint')
+    if not token_endpoint:
+        raise RuntimeError('OIDC discovery response is missing token_endpoint.')
+
+    basic_auth = base64.b64encode(f'{CLIENT_ID}:{CLIENT_SECRET}'.encode('utf-8')).decode('ascii')
+    oauth = _post_form(
+        token_endpoint,
+        {
+            'grant_type': 'refresh_token',
+            'client_id': CLIENT_ID,
+            'refresh_token': refresh_token,
+        },
+        headers={'Authorization': f'Basic {basic_auth}'},
+    )
+    if not oauth.get('access_token'):
+        raise RuntimeError(f'OAuth refresh response did not include an access_token: {oauth}')
+
+    session['oauthAccessToken'] = oauth['access_token']
+    if oauth.get('id_token'):
+        session['oauthIdToken'] = oauth['id_token']
+    if oauth.get('refresh_token'):
+        session['oauthRefreshToken'] = oauth['refresh_token']
+    if oauth.get('expires_in') is not None:
+        session['oauthAccessTokenExpiresAt'] = int(time.time()) + int(oauth['expires_in'])
+
+    return _save_session(session)
+
+
 def _callback_params(redirect: str) -> dict[str, list[str]]:
     parsed = urllib.parse.urlparse(redirect)
     expected = urllib.parse.urlparse(REDIRECT_URI)

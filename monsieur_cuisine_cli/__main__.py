@@ -6,7 +6,7 @@ import classyclick
 import click
 
 from . import __version__
-from .auth import _session_path, get_profile, login
+from .auth import _session_path, get_profile, login, renew
 
 
 class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
@@ -76,6 +76,17 @@ class Status(Auth.Command):
             click.echo('Token expiry: unavailable (invalid expiry value).')
             return
         click.echo(f'Token expires at {expiry.isoformat(timespec="seconds")}')
+
+
+class Renew(Auth.Command):
+    """Renew the saved OAuth access token using its refresh token."""
+
+    def __call__(self):
+        try:
+            path = renew()
+            click.echo(f'OAuth token renewed. Session saved to {path}')
+        except RuntimeError as exc:
+            raise click.ClickException(str(exc)) from exc
 
 
 class Logout(Auth.Command):

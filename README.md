@@ -38,11 +38,12 @@ Check or clear the saved session:
 
 ```sh
 uv run monsieur-cuisine auth status
+uv run monsieur-cuisine auth renew
 uv run monsieur-cuisine profile
 uv run monsieur-cuisine auth logout
 ```
 
-`auth status` reports whether a session file is saved, the account name when available, and the OAuth token expiry in your local timezone.
+`auth status` reports whether a session file is saved, the account name when available, and the OAuth token expiry in your local timezone. `auth renew` exchanges the saved OAuth refresh token and updates the OAuth access token, expiry, and rotated refresh token in the session file.
 
 ## Configuration
 
