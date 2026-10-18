@@ -279,6 +279,7 @@ def _capture_system_browser_callback(auth_url: str) -> str:
 
 def login(
     system_browser: bool = False,
+    language: str = 'en-GB',
 ) -> Path:
     """Authenticate using the mobile app's OIDC and API token-login flow."""
     discovery = _request(f'{ISSUER}/.well-known/openid-configuration')
@@ -302,8 +303,8 @@ def login(
         'code_challenge': challenge,
         'code_challenge_method': 'S256',
         'prompt': 'login',
-        'CountryCode': 'GB',
-        'Language': 'en-GB',
+        'CountryCode': language.rsplit('-', 1)[-1].upper() if '-' in language else language.upper(),
+        'Language': language,
     }
     auth_url = f'{authorization_endpoint}?{urllib.parse.urlencode(params)}'
     if system_browser:

@@ -30,10 +30,11 @@ class Login(Auth.Command):
     """Sign in through Lidl's account login."""
 
     browser: bool = classyclick.Option(default=False, help='Use the system browser and paste the final mobile callback URL.')
+    language: str = classyclick.Option(default='en-GB', help='Locale for Lidl sign-in (for example en-GB).')
 
     def __call__(self):
         try:
-            login(system_browser=self.browser)
+            login(system_browser=self.browser, language=self.language)
         except KeyboardInterrupt as exc:
             raise click.Abort() from exc
         except RuntimeError as exc:
