@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import click
 import classyclick
@@ -7,25 +8,26 @@ from . import __version__
 from .auth import _session_path, get_profile, login
 
 
-class CLI(classyclick.Group):
+class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
     """Manage recipes in a monsieur-cuisine.com account."""
 
     __config__ = classyclick.Group.Config(
         name='monsieur-cuisine',
         decorators=click.version_option(version=__version__),
     )
+    CONFIG_DEFAULT_NAME = 'monsieur-cuisine'
+    CONFIG_EXAMPLE_PATH = Path(__file__).with_name('config.example.toml')
+
+    def __call__(self):
+        self.load_config()
 
 
 class Auth(CLI.SubGroup):
     """Manage the account session."""
 
-    __config__ = classyclick.Group.Config(name='auth', help='Manage the account session.')
-
 
 class Login(Auth.Command):
     """Sign in through Lidl's account login."""
-
-    __config__ = classyclick.Command.Config(name='login', help="Sign in through Lidl's account login.")
 
     language: str = classyclick.Option(default='pt-PT', help='Sign-in locale (default: pt-PT).')
     browser: bool = classyclick.Option(default=False, help='Use the system browser and paste the final mobile callback URL.')
@@ -46,16 +48,12 @@ class Login(Auth.Command):
 class Status(Auth.Command):
     """Check whether an account session is saved locally."""
 
-    __config__ = classyclick.Command.Config(name='status', help='Check whether an account session is saved locally.')
-
     def __call__(self):
         click.echo('A session is saved.' if _session_path().is_file() else 'No session is saved.')
 
 
 class Logout(Auth.Command):
     """Remove the saved account session."""
-
-    __config__ = classyclick.Command.Config(name='logout', help='Remove the saved account session.')
 
     def __call__(self):
         path = _session_path()
@@ -69,13 +67,15 @@ class Logout(Auth.Command):
 class Profile(CLI.Command):
     """Fetch the authenticated account profile."""
 
-    __config__ = classyclick.Command.Config(name='profile', help='Fetch the authenticated account profile.')
-
     def __call__(self):
         try:
             click.echo(json.dumps(get_profile(), indent=2, ensure_ascii=False))
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
+
+
+class Config(classyclick.helpers.ConfigBaseCommand, CLI.Command):
+    """Show or edit the current TOML configuration."""
 
 
 def main() -> None:

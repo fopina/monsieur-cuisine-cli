@@ -34,6 +34,9 @@ monsieur-cuisine = "monsieur_cuisine_cli.__main__:main"
 [tool.setuptools.packages.find]
 include = ["monsieur_cuisine_cli*"]
 
+[tool.setuptools.package-data]
+monsieur_cuisine_cli = ["config.example.toml"]
+
 [tool.setuptools.dynamic]
 version = {attr = "monsieur_cuisine_cli.__version__"}
 

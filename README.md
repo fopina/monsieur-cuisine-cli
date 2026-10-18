@@ -42,6 +42,17 @@ uv run monsieur-cuisine profile
 uv run monsieur-cuisine auth logout
 ```
 
+## Configuration
+
+The CLI reads TOML settings from `~/.config/monsieur-cuisine/config.toml` (or the platform's user config directory). On first run it creates this file from the packaged example. Login defaults can be edited with:
+
+```sh
+uv run monsieur-cuisine config
+uv run monsieur-cuisine config --edit
+```
+
+The example config stores defaults under `[auth.login]`, including `language`, `browser`, and `redirect_uri`. Command-line options override config values. Use the root `--config PATH` option to select a different file, or `--env NAME` to merge a named `[env.NAME]` section.
+
 ## Planned capabilities
 
 - Add a recipe to the account.
