@@ -2,37 +2,56 @@
 
 A command-line client for managing recipes in a monsieur-cuisine.com account.
 
-The goal is to make common account tasks available from the terminal, including
-adding recipes, updating recipe details, and removing recipes. This project is
-at an early stage: the current Python package is still the template demo, and
-the account and recipe commands described here are planned rather than
-implemented.
+This project is at an early stage. Account sign-in and a read-only profile command are implemented; recipe management commands are planned.
+
+## Install for development
+
+This project uses [uv](https://docs.astral.sh/uv/) for Python environment and dependency management.
+
+```sh
+uv sync --dev
+uv run playwright install chromium
+```
+
+## Sign in
+
+Start the Lidl OAuth login flow used by the Monsieur Cuisine Android app:
+
+```sh
+uv run monsieur-cuisine auth login
+```
+
+Complete sign-in and any reCAPTCHA challenge in the browser opened by Playwright. The CLI captures the app's OAuth callback, exchanges the authorization code, and performs the app's encrypted API login.
+
+The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow uses the mobile app's registered deep link by default. A loopback callback can be tried explicitly with `--redirect-uri http://localhost:3000`; Lidl may reject it because redirect URIs are configured server-side.
+
+Check or clear the saved session:
+
+```sh
+uv run monsieur-cuisine auth status
+uv run monsieur-cuisine profile
+uv run monsieur-cuisine auth logout
+```
 
 ## Planned capabilities
 
-- Connect to a monsieur-cuisine.com account.
 - Add a recipe to the account.
 - Update an existing recipe.
 - Remove a recipe from the account.
 
-Command names, authentication setup, and recipe input format will be
-documented here as those features are implemented.
+## Research notes
 
-## Development
-
-This project uses [uv](https://docs.astral.sh/uv/) for Python environment and
-dependency management. Once the template is adapted, install the development
-dependencies with:
+The Android app is used as a reference for the undocumented account and recipe API. Monsieur Cuisine App **1.4.2** was downloaded from the [APKMirror Monsieur Cuisine App listing](https://www.apkmirror.com/apk/lidl-digital-international-gmbh-co-kg/monsieur-cuisine-app/) and decoded to smali with [fopina/docker-dedroid](https://github.com/fopina/docker-dedroid). The APK and generated decompilation are kept in the local, gitignored `.apk-analysis/` directory; download the APK from APKMirror yourself before running the command below.
 
 ```sh
-uv sync --dev
+mkdir -p .apk-analysis
+# Save the APKMirror download as .apk-analysis/monsieur-cuisine-1.4.2.apk
+docker run --rm -v "$PWD/.apk-analysis:/work" fopina/dedroid apktool d \
+  /work/monsieur-cuisine-1.4.2.apk -o /work/decompiled -f
 ```
 
-The Python package template currently provides pytest and Ruff checks. See the
-project's `Makefile` for the available development commands.
+The decoded manifest registers `lidl-com.monsieur-cuisine.companion://login/prod` as the app's login callback. The app uses `https://accounts.lidl.com` for sign-in and `https://mc-api.tecpal.com` for its main API. Decompiled Retrofit interfaces include recipe list/detail/search routes such as `GET api/v2/recipes/page/{page}/size/{size}`, `GET api/v2/recipes/{id}`, and `GET api/v1/recipes/search/page/{page}/size/{size}`. These are implementation observations from app version 1.4.2, not a supported public API contract.
 
 ## Disclaimer
 
-This is an unofficial community project and is not affiliated with or endorsed
-by monsieur-cuisine.com or its operators. Use it only with an account you are
-authorized to access, and follow the service's terms and applicable policies.
+This is an unofficial community project and is not affiliated with or endorsed by monsieur-cuisine.com, Lidl, or their operators. Use it only with an account you are authorized to access, and follow the services' terms and applicable policies.
