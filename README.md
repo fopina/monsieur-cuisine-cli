@@ -32,7 +32,7 @@ uv run monsieur-cuisine auth login --browser
 
 After sign-in, copy the final redirect URL beginning with `lidl-com.monsieur-cuisine.companion://` and paste it into the terminal prompt. Depending on the browser, you may need to copy the URL from its address bar or redirect/error page. The CLI validates the callback's scheme, path, and OAuth `state` before exchanging the one-time authorization code.
 
-The API session is stored at `~/.config/monsieur-cuisine/session.json` (or `$XDG_CONFIG_HOME/monsieur-cuisine/session.json`) with owner-only file permissions. The login flow always uses the mobile app's registered deep link and requests the English (UK) locale by default (`Language=en-GB`, `CountryCode=GB`). Use `--language` to request another locale, for example `uv run monsieur-cuisine auth login --language de-DE`.
+The API session is stored as `session.json` beside the active config TOML file (by default `~/.config/monsieur-cuisine/session.json`, or under `$XDG_CONFIG_HOME`). If you pass `--config PATH`, the session and companion ID are stored beside that file. The session has owner-only file permissions. The login flow always uses the mobile app's registered deep link and requests the English (UK) locale by default (`Language=en-GB`, `CountryCode=GB`). Use `--language` to request another locale, for example `uv run monsieur-cuisine auth login --language de-DE`.
 
 Check or clear the saved session:
 

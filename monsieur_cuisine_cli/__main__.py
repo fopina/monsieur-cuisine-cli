@@ -9,6 +9,11 @@ from . import __version__
 from .auth import _session_path, get_profile, login, renew
 
 
+def _selected_config_path() -> Path | None:
+    context = click.get_current_context(silent=True)
+    return context.find_root().meta.get('config_path') if context else None
+
+
 class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
     """Manage recipes in a monsieur-cuisine.com account."""
 
@@ -37,7 +42,11 @@ class Login(Auth.Command):
 
     def __call__(self):
         try:
-            login(system_browser=self.browser, language=self.language)
+            login(
+                system_browser=self.browser,
+                language=self.language,
+                config_path=_selected_config_path(),
+            )
         except KeyboardInterrupt as exc:
             raise click.Abort() from exc
         except RuntimeError as exc:
@@ -48,7 +57,7 @@ class Status(Auth.Command):
     """Check whether an account session is saved locally."""
 
     def __call__(self):
-        path = _session_path()
+        path = _session_path(_selected_config_path())
         if not path.is_file():
             click.echo('No session is saved.')
             return
@@ -83,7 +92,7 @@ class Renew(Auth.Command):
 
     def __call__(self):
         try:
-            path = renew()
+            path = renew(_selected_config_path())
             click.echo(f'OAuth token renewed. Session saved to {path}')
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
@@ -93,7 +102,7 @@ class Logout(Auth.Command):
     """Remove the saved account session."""
 
     def __call__(self):
-        path = _session_path()
+        path = _session_path(_selected_config_path())
         if path.exists():
             path.unlink()
             click.echo('Saved session removed.')
@@ -106,7 +115,7 @@ class Profile(CLI.Command):
 
     def __call__(self):
         try:
-            click.echo(json.dumps(get_profile(), indent=2, ensure_ascii=False))
+            click.echo(json.dumps(get_profile(_selected_config_path()), indent=2, ensure_ascii=False))
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
 
