@@ -42,6 +42,8 @@ uv run monsieur-cuisine profile
 uv run monsieur-cuisine auth logout
 ```
 
+`auth status` reports whether a session file is saved and, when the OAuth token expiry is available, its expiry time in your local timezone.
+
 ## Configuration
 
 The CLI reads TOML settings from `~/.config/monsieur-cuisine/config.toml` (or the platform's user config directory). On first run it creates this file from the packaged example. Login defaults can be edited with:

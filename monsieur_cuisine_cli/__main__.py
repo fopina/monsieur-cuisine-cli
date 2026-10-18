@@ -1,8 +1,9 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
-import click
 import classyclick
+import click
 
 from . import __version__
 from .auth import _session_path, get_profile, login
@@ -29,7 +30,9 @@ class Auth(CLI.SubGroup):
 class Login(Auth.Command):
     """Sign in through Lidl's account login."""
 
-    browser: bool = classyclick.Option(default=False, help='Use the system browser and paste the final mobile callback URL.')
+    browser: bool = classyclick.Option(
+        default=False, help='Use the system browser and paste the final mobile callback URL.'
+    )
     language: str = classyclick.Option(default='en-GB', help='Locale for Lidl sign-in (for example en-GB).')
 
     def __call__(self):
@@ -45,7 +48,28 @@ class Status(Auth.Command):
     """Check whether an account session is saved locally."""
 
     def __call__(self):
-        click.echo('A session is saved.' if _session_path().is_file() else 'No session is saved.')
+        path = _session_path()
+        if not path.is_file():
+            click.echo('No session is saved.')
+            return
+
+        click.echo('A session is saved.')
+        try:
+            session = json.loads(path.read_text(encoding='utf-8'))
+        except (OSError, json.JSONDecodeError):
+            click.echo('Token expiry: unavailable (could not read the session file).')
+            return
+
+        expires_at = session.get('oauthAccessTokenExpiresAt')
+        if expires_at is None:
+            click.echo('Token expiry: unavailable.')
+            return
+        try:
+            expiry = datetime.fromtimestamp(int(expires_at)).astimezone()
+        except (TypeError, ValueError, OverflowError, OSError):
+            click.echo('Token expiry: unavailable (invalid expiry value).')
+            return
+        click.echo(f'Token expires at {expiry.isoformat(timespec="seconds")}')
 
 
 class Logout(Auth.Command):
