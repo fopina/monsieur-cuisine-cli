@@ -4,7 +4,7 @@ from pathlib import Path
 import classyclick
 import click
 
-from . import __version__
+from .. import __version__
 
 
 @dataclass(init=False)
@@ -25,7 +25,7 @@ class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
         context_settings={'terminal_width': 10_000, 'max_content_width': 10_000},
     )
     CONFIG_DEFAULT_NAME = 'monsieur-cuisine'
-    CONFIG_EXAMPLE_PATH = Path(__file__).with_name('default-config.toml')
+    CONFIG_EXAMPLE_PATH = Path(__file__).parents[1] / 'default-config.toml'
     lang: str = classyclick.Option(default='en-US', show_default=True, help='Locale for API requests and Lidl sign-in.')
     session_file: str = classyclick.Option(
         default='session.json',

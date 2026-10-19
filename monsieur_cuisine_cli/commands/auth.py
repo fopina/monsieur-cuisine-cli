@@ -6,7 +6,7 @@ import classyclick
 import click
 
 from ..auth import _session_path, get_profile, login, renew
-from ..cli import CLI, ContextProperties
+from .cli import CLI, ContextProperties
 
 
 class Auth(CLI.SubGroup):

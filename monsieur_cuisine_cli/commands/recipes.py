@@ -3,8 +3,8 @@ import json
 import classyclick
 import click
 
-from ..cli import CLI, ContextProperties
 from ..recipes import get_my_recipe, get_recipe_from_url, list_my_recipes
+from .cli import CLI, ContextProperties
 
 
 class Recipes(CLI.SubGroup):

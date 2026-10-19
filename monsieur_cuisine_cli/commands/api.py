@@ -4,7 +4,7 @@ import classyclick
 import click
 
 from ..auth import call_api
-from ..cli import CLI, ContextProperties
+from .cli import CLI, ContextProperties
 
 
 class Api(ContextProperties, CLI.Command):
