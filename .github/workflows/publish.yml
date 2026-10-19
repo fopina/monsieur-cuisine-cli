@@ -65,13 +65,13 @@ jobs:
         run: uv run twine upload --verbose --repository ${{ inputs.repository }} dist/*
       - name: highlight
         run: |
-          INSTALL_COMMAND="pip install"
+          INDEX_ARGS=""
           if [ "${{ inputs.repository }}" != "pypi" ]; then
-            INSTALL_COMMAND="pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple"
+            INDEX_ARGS="--index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple"
           fi
           cat <<EOF >> ${GITHUB_STEP_SUMMARY}
           \`monsieur-cuisine-cli\` uploaded to ${{ inputs.repository }}
           \`\`\`
-          ${INSTALL_COMMAND} monsieur-cuisine-cli==${{ inputs.version }}
+          pip install ${INDEX_ARGS} monsieur-cuisine-cli==${{ inputs.version }}
           \`\`\`
           EOF
