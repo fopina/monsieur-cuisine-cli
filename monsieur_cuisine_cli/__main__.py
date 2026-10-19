@@ -1,4 +1,3 @@
-from .commands import api, auth, recipes  # noqa: F401
 from .commands.cli import CLI
 
 

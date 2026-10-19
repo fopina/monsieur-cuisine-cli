@@ -41,3 +41,6 @@ class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
 
 class Config(classyclick.helpers.ConfigBaseCommand, CLI.Command):
     """Show or edit the current TOML configuration."""
+
+
+classyclick.helpers.discover_commands(__package__)
