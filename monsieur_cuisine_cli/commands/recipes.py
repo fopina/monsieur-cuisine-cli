@@ -32,7 +32,9 @@ class List(ContextProperties, Recipes.Command):
 
     def __call__(self):
         try:
-            recipes = list_my_recipes(self.page, self.size, self.config_path, language=self.language, session_file=self.session_file)
+            recipes = list_my_recipes(
+                self.page, self.size, self.config_path, language=self.language, session_file=self.session_file
+            )
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
         click.echo(json.dumps(recipes, indent=2, ensure_ascii=False))
@@ -45,7 +47,9 @@ class Get(ContextProperties, Recipes.Command):
 
     def __call__(self):
         try:
-            recipe = get_my_recipe(self.recipe_id, self.config_path, language=self.language, session_file=self.session_file)
+            recipe = get_my_recipe(
+                self.recipe_id, self.config_path, language=self.language, session_file=self.session_file
+            )
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
         click.echo(json.dumps(recipe, indent=2, ensure_ascii=False))

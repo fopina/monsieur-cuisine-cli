@@ -16,11 +16,18 @@ class Auth(CLI.SubGroup):
 class Login(ContextProperties, Auth.Command):
     """Sign in through Lidl's account login."""
 
-    browser: bool = classyclick.Option(default=False, help='Use the system browser and paste the final mobile callback URL.')
+    browser: bool = classyclick.Option(
+        default=False, help='Use the system browser and paste the final mobile callback URL.'
+    )
 
     def __call__(self):
         try:
-            login(system_browser=self.browser, language=self.language, config_path=self.config_path, session_file=self.session_file)
+            login(
+                system_browser=self.browser,
+                language=self.language,
+                config_path=self.config_path,
+                session_file=self.session_file,
+            )
         except KeyboardInterrupt as exc:
             raise click.Abort() from exc
         except RuntimeError as exc:

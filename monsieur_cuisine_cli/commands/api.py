@@ -21,7 +21,14 @@ class Api(ContextProperties, CLI.Command):
     def __call__(self):
         try:
             payload = json.loads(self.data) if self.data is not None else None
-            result = call_api(self.endpoint, method=self.method, data=payload, language=self.language, config_path=self.config_path, session_file=self.session_file)
+            result = call_api(
+                self.endpoint,
+                method=self.method,
+                data=payload,
+                language=self.language,
+                config_path=self.config_path,
+                session_file=self.session_file,
+            )
         except json.JSONDecodeError as exc:
             raise click.ClickException(f'--data must contain valid JSON: {exc}') from exc
         except RuntimeError as exc:
