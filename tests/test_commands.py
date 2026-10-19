@@ -5,13 +5,18 @@ from click.testing import CliRunner
 from monsieur_cuisine_cli.commands.cli import CLI
 
 
-def test_api_command_prints_json_and_passes_options(monkeypatch):
+def test_api_command_prints_json_and_passes_options(monkeypatch, tmp_path):
     from monsieur_cuisine_cli.commands import api
 
     calls = []
     monkeypatch.setattr(api, 'call_api', lambda *args, **kwargs: calls.append((args, kwargs)) or {'ok': True})
 
-    result = CliRunner().invoke(CLI.click, ['--lang', 'de-DE', 'api', 'api/v2/test', '--method', 'POST', '--data', '{"x": 1}'])
+    config = tmp_path / 'config.toml'
+    config.touch()
+    result = CliRunner().invoke(
+        CLI.click,
+        ['--config', str(config), '--lang', 'de-DE', 'api', 'api/v2/test', '--method', 'POST', '--data', '{"x": 1}'],
+    )
 
     assert result.exit_code == 0
     assert json.loads(result.output) == {'ok': True}
