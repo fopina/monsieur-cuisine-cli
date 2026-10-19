@@ -5,59 +5,10 @@ from pathlib import Path
 
 import classyclick
 import click
-from click.formatting import term_len
 
 from . import __version__
 from .auth import _session_path, call_api, get_profile, login, renew
 from .recipes import get_my_recipe, get_recipe_from_url, list_my_recipes
-
-
-class NoWrapHelpFormatter(click.HelpFormatter):
-    """Render help descriptions and option text without terminal-width wrapping."""
-
-    def write_text(self, text: str) -> None:
-        indent = ' ' * self.current_indent
-        lines = text.splitlines()
-        if not lines:
-            self.write('\n')
-            return
-        for line in lines:
-            self.write(f'{indent}{line}\n')
-
-    def write_dl(self, rows, col_max: int = 30, col_spacing: int = 2) -> None:
-        rows = list(rows)
-        first_col = max((term_len(first) for first, _ in rows), default=0)
-        indent = ' ' * self.current_indent
-        continuation_indent = indent + (' ' * (first_col + col_spacing))
-        for first, second in rows:
-            self.write(f'{indent}{first}')
-            if not second:
-                self.write('\n')
-                continue
-            self.write(' ' * (first_col - term_len(first) + col_spacing))
-            lines = second.splitlines()
-            if not lines:
-                self.write('\n')
-                continue
-            self.write(f'{lines[0]}\n')
-            for line in lines[1:]:
-                self.write(f'{continuation_indent}{line}\n')
-
-
-class NoWrapContext(click.Context):
-    formatter_class = NoWrapHelpFormatter
-
-
-class NoWrapCommand(click.Command):
-    context_class = NoWrapContext
-
-
-class NoWrapGroup(click.Group):
-    context_class = NoWrapContext
-    command_class = NoWrapCommand
-
-
-NoWrapGroup.group_class = NoWrapGroup
 
 
 def _selected_config_path() -> Path | None:
@@ -93,6 +44,7 @@ class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
     __config__ = classyclick.Group.Config(
         name='monsieur-cuisine',
         decorators=click.version_option(version=__version__),
+        context_settings={'terminal_width': 10_000, 'max_content_width': 10_000},
     )
     CONFIG_DEFAULT_NAME = 'monsieur-cuisine'
     CONFIG_EXAMPLE_PATH = Path(__file__).with_name('default-config.toml')
@@ -105,11 +57,6 @@ class CLI(classyclick.helpers.ConfigFileMixin, classyclick.Group):
 
     def __call__(self):
         self.load_config()
-
-
-CLI.click.context_class = NoWrapContext
-CLI.click.command_class = NoWrapCommand
-CLI.click.group_class = NoWrapGroup
 
 
 class Auth(CLI.SubGroup):
