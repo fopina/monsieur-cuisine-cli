@@ -44,10 +44,12 @@ def parse_recipe(path: Path) -> dict:
     device_ids = metadata['deviceTypeIds']
     if not isinstance(device_ids, list) or not device_ids or any(type(value) is not int for value in device_ids):
         raise ValueError('deviceTypeIds must be a non-empty list of integer IDs')
-    ingredient_groups = [{
-        'name': '',
-        'ingredients': [{'name': value, 'amount': '', 'unit': '', 'isOptional': False} for value in ingredients],
-    }]
+    ingredient_groups = [
+        {
+            'name': '',
+            'ingredients': [{'name': value, 'amount': '', 'unit': '', 'isOptional': False} for value in ingredients],
+        }
+    ]
     payload = {
         'status': metadata.get('status', 'draft'),
         'source': 'member',
@@ -55,15 +57,17 @@ def parse_recipe(path: Path) -> dict:
         'deviceTypeIds': device_ids,
         'title': metadata['title'],
         'description': metadata.get('description', ''),
-        'servingSizes': [{
-            'amount': servings,
-            'unit': metadata.get('servingUnit', 'servings'),
-            'instruction': '',
-            'preparationTime': int(metadata.get('preparationTime', 0)),
-            'readyInTime': int(metadata.get('readyInTime', 0)),
-            'ingredientGroups': ingredient_groups,
-            'steps': [{'title': metadata['title'], 'description': value, 'mode': None} for value in steps],
-        }],
+        'servingSizes': [
+            {
+                'amount': servings,
+                'unit': metadata.get('servingUnit', 'servings'),
+                'instruction': '',
+                'preparationTime': int(metadata.get('preparationTime', 0)),
+                'readyInTime': int(metadata.get('readyInTime', 0)),
+                'ingredientGroups': ingredient_groups,
+                'steps': [{'title': metadata['title'], 'description': value, 'mode': None} for value in steps],
+            }
+        ],
     }
     for optional in ('categoryIds', 'complexityId', 'hintsAndTips'):
         if optional in metadata:
