@@ -19,4 +19,4 @@ jobs:
       - name: Check generated payload
         env:
           OUTPUT_DIR: ${{ runner.temp }}/recipe-json
-        run: python -c 'import json, os; p=json.load(open(os.path.join(os.environ["OUTPUT_DIR"], "soup.json"))); size=p["servingSizes"][0]; assert p["title"] == "Tomato soup"; assert size["isDefault"] is True; assert len(size["steps"]) == 2'
+        run: python -c 'import json, os; p=json.load(open(os.path.join(os.environ["OUTPUT_DIR"], "soup.json"))); size=p["servingSizes"][0]; assert p["title"] == "Tomato soup"; assert size["isDefault"] is True; assert size["ingredientGroups"][0]["isDefault"] is True; assert len(size["steps"]) == 2'

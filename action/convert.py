@@ -48,6 +48,7 @@ def parse_recipe(path: Path) -> dict:
     ingredient_groups = [
         {
             'name': '',
+            'isDefault': True,
             'ingredients': [{'name': value, 'amount': '', 'unit': '', 'isOptional': False} for value in ingredients],
         }
     ]
