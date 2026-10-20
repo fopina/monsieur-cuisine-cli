@@ -135,6 +135,8 @@ The recipe editor HAR also shows creation as `POST api/v3/auth/user/recipes/` wi
 
 The update HAR shows `PUT api/v3/auth/user/recipes/{id}` with a recipe object in `payload`; the observed response was HTTP 200 with the updated recipe at `data.recipe`. The request includes the recipe's status, source, locale, device types, title, media references, complexity, sharing flag, categories, nutrients, and serving sizes with ingredient groups and steps. The CLI exposes this as `recipes update {id} --data '{...}'`, sending the JSON object as the PUT body. No v1 update endpoint was identified. This is a full recipe-shaped payload, so retain fields that should remain on the recipe when constructing an update.
 
+Recipe helpers unwrap the common top-level `data` envelope before printing results, matching the profile helper's behavior. This removes wrapper fields such as `code` and `message` while preserving the endpoint's resource keys (for example, `recipe` or `recipes`).
+
 These observations come from Android app version 1.4.2 and website request examples, not a supported public API contract.
 
 ## Disclaimer

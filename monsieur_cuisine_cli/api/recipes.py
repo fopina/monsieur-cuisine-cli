@@ -7,12 +7,18 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .auth import call_api
+from . import auth
 
 _RECIPE_ID = re.compile(r'["\']?recipeId["\']?\s*:\s*["\']?(\d+)', re.IGNORECASE)
 _VIEWER_LANG = re.compile(
     r'["\']?viewer-lang["\']?\s*[:=]\s*["\']?([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)', re.IGNORECASE
 )
+
+
+def _call_api(*args, **kwargs) -> object | None:
+    """Call the API and unwrap its top-level data envelope."""
+    response = auth.call_api(*args, **kwargs)
+    return response.get('data', response) if isinstance(response, dict) else response
 
 
 def _recipe_page_metadata(url: str) -> tuple[str, str]:
@@ -54,7 +60,7 @@ def _recipe_page_metadata(url: str) -> tuple[str, str]:
 def get_recipe_from_url(url: str, config_path=None, *, session_file: str = 'session.json') -> dict:
     """Resolve a recipe page URL and fetch its API detail response."""
     recipe_id, viewer_language = _recipe_page_metadata(url)
-    recipe = call_api(
+    recipe = _call_api(
         f'api/v2/recipes/{recipe_id}',
         language=viewer_language,
         config_path=config_path,
@@ -91,7 +97,7 @@ def list_my_recipes(
             ('q', ''),
         ]
     )
-    return call_api(
+    return _call_api(
         f'api/v3/auth/user/recipes?{query}',
         language=language,
         config_path=config_path,
@@ -112,7 +118,7 @@ def list_my_recipes_v1(
         raise RuntimeError('Page must be 1 or greater.')
     if size < 1:
         raise RuntimeError('Page size must be 1 or greater.')
-    return call_api(
+    return _call_api(
         f'api/v1/my-recipes/page/{page}/size/{size}',
         language=language,
         config_path=config_path,
@@ -130,7 +136,7 @@ def get_my_recipe(
     """Fetch an authored recipe by its ID using the current v3 endpoint."""
     if recipe_id < 1:
         raise RuntimeError('Recipe ID must be a positive integer.')
-    return call_api(
+    return _call_api(
         f'api/v3/auth/user/recipes/{recipe_id}',
         language=language,
         config_path=config_path,
@@ -148,7 +154,7 @@ def create_my_recipe(
     """Create an authored recipe using the observed v3 endpoint."""
     if not isinstance(payload, dict):
         raise RuntimeError('Recipe payload must be a JSON object.')
-    return call_api(
+    return _call_api(
         'api/v3/auth/user/recipes/',
         method='POST',
         data=payload,
@@ -171,7 +177,7 @@ def update_my_recipe(
         raise RuntimeError('Recipe ID must be a positive integer.')
     if not isinstance(payload, dict):
         raise RuntimeError('Recipe payload must be a JSON object.')
-    return call_api(
+    return _call_api(
         f'api/v3/auth/user/recipes/{recipe_id}',
         method='PUT',
         data=payload,
@@ -191,7 +197,7 @@ def get_my_recipe_v1(
     """Fetch an authored recipe through the retained legacy v1 endpoint."""
     if recipe_id < 1:
         raise RuntimeError('Recipe ID must be a positive integer.')
-    return call_api(
+    return _call_api(
         f'api/v1/my-recipes/{recipe_id}',
         language=language,
         config_path=config_path,
