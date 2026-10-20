@@ -21,6 +21,85 @@ def _call_api(*args, **kwargs) -> object | None:
     return response.get('data', response) if isinstance(response, dict) else response
 
 
+def _validate_recipe_write_payload(payload: dict) -> None:
+    """Reject known read-response shapes that do not match recipe write payloads."""
+    if not isinstance(payload, dict):
+        raise RuntimeError('Recipe payload must be a JSON object.')
+
+    issues = []
+    write_field_for_response = {
+        'deviceTypes': 'deviceTypeIds (integer IDs)',
+        'categories': 'categoryIds (integer IDs)',
+        'complexity': 'complexityId (an integer ID)',
+    }
+    for response_field, write_field in write_field_for_response.items():
+        if response_field in payload:
+            issues.append(f'{response_field} is a response field; use {write_field}.')
+
+    for id_field in ('deviceTypeIds', 'categoryIds'):
+        values = payload.get(id_field)
+        if id_field in payload and not isinstance(values, list):
+            issues.append(f'{id_field} must be a list of integer IDs.')
+        elif isinstance(values, list) and any(
+            not isinstance(value, int) or isinstance(value, bool) for value in values
+        ):
+            issues.append(f'{id_field} must contain integer IDs, not objects or other values.')
+
+    if 'complexityId' in payload and (
+        not isinstance(payload['complexityId'], int) or isinstance(payload['complexityId'], bool)
+    ):
+        issues.append('complexityId must be an integer ID, not a complexity object.')
+
+    for image_field in ('thumbnail', 'detailsImage'):
+        image = payload.get(image_field)
+        if isinstance(image, dict):
+            for media_field, media_id_field in (
+                ('portraitMedia', 'portraitMediaId'),
+                ('landscapeMedia', 'landscapeMediaId'),
+            ):
+                if media_field in image:
+                    issues.append(
+                        f'{image_field}.{media_field} is an expanded response object; '
+                        f'use {image_field}.{media_id_field} and the corresponding IsAiGenerated field.'
+                    )
+                media_id = image.get(media_id_field)
+                if (
+                    media_id_field in image
+                    and media_id is not None
+                    and (not isinstance(media_id, int) or isinstance(media_id, bool))
+                ):
+                    issues.append(f'{image_field}.{media_id_field} must be an integer ID or null.')
+
+    nutrients = payload.get('nutrients')
+    if isinstance(nutrients, list):
+        for index, nutrient in enumerate(nutrients):
+            if isinstance(nutrient, dict) and 'amountFloat' in nutrient:
+                issues.append(f'nutrients[{index}].amountFloat is response-only; provide amount instead.')
+
+    serving_sizes = payload.get('servingSizes')
+    if isinstance(serving_sizes, list):
+        for index, serving_size in enumerate(serving_sizes):
+            if not isinstance(serving_size, dict):
+                continue
+            for field in ('maxServing', 'modules', 'order'):
+                if field in serving_size:
+                    issues.append(f'servingSizes[{index}].{field} is response-only; remove it from the payload.')
+            steps = serving_size.get('steps')
+            if isinstance(steps, list):
+                for step_index, step in enumerate(steps):
+                    if not isinstance(step, dict):
+                        continue
+                    for field in ('duration', 'videoMedia', 'order'):
+                        if field in step:
+                            issues.append(
+                                f'servingSizes[{index}].steps[{step_index}].{field} is response-only; '
+                                'remove it from the payload.'
+                            )
+
+    if issues:
+        raise RuntimeError('Recipe payload uses response-shaped fields:\n- ' + '\n- '.join(issues))
+
+
 def _recipe_page_metadata(url: str) -> tuple[str, str]:
     parsed = urllib.parse.urlsplit(url)
     if parsed.scheme != 'https' or parsed.hostname not in {'www.monsieur-cuisine.com', 'monsieur-cuisine.com'}:
@@ -152,8 +231,7 @@ def create_my_recipe(
     session_file: str = 'session.json',
 ) -> object | None:
     """Create an authored recipe using the observed v3 endpoint."""
-    if not isinstance(payload, dict):
-        raise RuntimeError('Recipe payload must be a JSON object.')
+    _validate_recipe_write_payload(payload)
     return _call_api(
         'api/v3/auth/user/recipes/',
         method='POST',
@@ -175,8 +253,7 @@ def update_my_recipe(
     """Update an authored recipe using the observed v3 endpoint."""
     if recipe_id < 1:
         raise RuntimeError('Recipe ID must be a positive integer.')
-    if not isinstance(payload, dict):
-        raise RuntimeError('Recipe payload must be a JSON object.')
+    _validate_recipe_write_payload(payload)
     return _call_api(
         f'api/v3/auth/user/recipes/{recipe_id}',
         method='PUT',

@@ -135,6 +135,8 @@ The recipe editor HAR also shows creation as `POST api/v3/auth/user/recipes/` wi
 
 The update HAR shows `PUT api/v3/auth/user/recipes/{id}` with a recipe object in `payload`; the observed response was HTTP 200 with the updated recipe at `data.recipe`. The request includes the recipe's status, source, locale, device types, title, media references, complexity, sharing flag, categories, nutrients, and serving sizes with ingredient groups and steps. The CLI exposes this as `recipes update {id} --data '{...}'`, sending the JSON object as the PUT body. No v1 update endpoint was identified. This is a full recipe-shaped payload, so retain fields that should remain on the recipe when constructing an update.
 
+The `recipes create` and `recipes update` commands check for known response-shaped fields before sending a write. They reject `deviceTypes`, `categories`, and `complexity` in favor of `deviceTypeIds`, `categoryIds`, and `complexityId`; expanded thumbnail/details-image media objects in favor of media ID fields; and response-only nutrient, serving-size, and step fields. The error lists each offending path and the expected write shape.
+
 Recipe helpers unwrap the common top-level `data` envelope before printing results, matching the profile helper's behavior. This removes wrapper fields such as `code` and `message` while preserving the endpoint's resource keys (for example, `recipe` or `recipes`).
 
 The normalized outputs from live `profile`, `recipes list`, and `recipes get` calls are represented by redacted fixtures in `tests/fixtures/`; unit tests use them to guard the command output shape. Account identifiers, personal details, recipe text, media URLs, and timestamps are replaced with safe examples.

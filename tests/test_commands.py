@@ -9,7 +9,7 @@ def test_api_command_prints_json_and_passes_options(monkeypatch, tmp_path):
     from monsieur_cuisine_cli.commands import api
 
     calls = []
-    monkeypatch.setattr(api, 'call_api', lambda *args, **kwargs: calls.append((args, kwargs)) or {'ok': True})
+    monkeypatch.setattr(api.auth, 'call_api', lambda *args, **kwargs: calls.append((args, kwargs)) or {'ok': True})
 
     config = tmp_path / 'config.toml'
     config.touch()
