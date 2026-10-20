@@ -100,7 +100,7 @@ def test_login_completes_mocked_oauth_flow(tmp_path, monkeypatch):
         assert values['code'] == 'auth-code'
         assert values['redirect_uri'] == auth.REDIRECT_URI
         assert headers['Authorization'].startswith('Basic ')
-        id_token = f"header.{auth._b64url(json.dumps({'nonce': 'fixed-state'}).encode())}.signature"
+        id_token = f'header.{auth._b64url(json.dumps({"nonce": "fixed-state"}).encode())}.signature'
         return {'access_token': 'oauth-access', 'id_token': id_token, 'refresh_token': 'refresh', 'expires_in': 60}
 
     def fake_api_login(oauth, config_path, *, language, session_file):
@@ -134,3 +134,31 @@ def test_login_completes_mocked_oauth_flow(tmp_path, monkeypatch):
     assert json.loads(session_path.read_text()) == {
         'accessToken': 'api-access',
     }
+
+
+def test_login_rejects_id_token_with_wrong_nonce(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        auth,
+        '_request',
+        lambda url, *, language: {
+            'authorization_endpoint': 'https://accounts.test/authorize',
+            'token_endpoint': 'https://accounts.test/token',
+        },
+    )
+    monkeypatch.setattr(auth.secrets, 'token_urlsafe', lambda _: 'expected-nonce')
+
+    def capture_callback(auth_url):
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(auth_url).query)
+        callback = {'code': 'auth-code', 'state': params['state'][0]}
+        return f'{auth.REDIRECT_URI}?' + urllib.parse.urlencode(callback)
+
+    def post_form(*args, **kwargs):
+        id_token = f'header.{auth._b64url(json.dumps({"nonce": "wrong-nonce"}).encode())}.signature'
+        return {'access_token': 'oauth-access', 'id_token': id_token}
+
+    monkeypatch.setattr(auth, '_capture_system_browser_callback', capture_callback)
+    monkeypatch.setattr(auth, '_post_form', post_form)
+    monkeypatch.setattr(auth, '_api_token_login', lambda *args, **kwargs: pytest.fail('API login must not run'))
+
+    with pytest.raises(RuntimeError, match='nonce did not match'):
+        auth.login(system_browser=True, config_path=tmp_path / 'settings.toml')
