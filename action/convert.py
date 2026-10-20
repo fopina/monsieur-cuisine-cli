@@ -11,7 +11,7 @@ from pathlib import Path
 import tomllib
 
 
-def parse_recipe(path: Path) -> tuple[dict, int | None]:
+def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None]:
     text = path.read_text(encoding='utf-8')
     if not text.startswith('+++\n'):
         raise ValueError('expected TOML front matter delimited by +++')
@@ -29,8 +29,36 @@ def parse_recipe(path: Path) -> tuple[dict, int | None]:
             sections[current] = []
         elif current and line.strip():
             sections[current].append(line.strip())
-    ingredients = [re.sub(r'^[-*+]\s+', '', line) for line in sections.get('ingredients', [])]
-    steps = [re.sub(r'^\d+[.)]\s+', '', line) for line in sections.get('steps', [])]
+    ingredients = []
+    for line in sections.get('ingredients', []):
+        item = re.sub(r'^[-*+]\s+', '', line)
+        annotation = re.search(r'<!--\s*mc-ingredient:\s*(\{.*\})\s*-->', item)
+        details = json.loads(annotation.group(1)) if annotation else {}
+        if annotation:
+            item = item[: annotation.start()].strip()
+        if not isinstance(details, dict):
+            raise ValueError('mc-ingredient annotation must be a JSON object')
+        ingredients.append(
+            {
+                'name': item,
+                'amount': details.get('amount', ''),
+                'unit': details.get('unit', ''),
+                'isOptional': details.get('isOptional', False),
+            }
+        )
+    steps = []
+    for line in sections.get('steps', []):
+        item = re.sub(r'^\d+[.)]\s+', '', line)
+        annotation = re.search(r'<!--\s*mc-mode:\s*(\{.*\})\s*-->', item)
+        mode = json.loads(annotation.group(1)) if annotation else None
+        if annotation:
+            item = item[: annotation.start()].strip()
+        title_match = re.match(r'^\*\*(.+?)\*\*:\s*(.*)$', item)
+        step_title = title_match.group(1) if title_match else metadata.get('title', path.stem)
+        description = title_match.group(2) if title_match else item
+        if mode is not None and not isinstance(mode, dict):
+            raise ValueError('mc-mode annotation must be a JSON object')
+        steps.append({'title': step_title, 'description': description, 'mode': mode})
     required = ('title', 'languageLocale', 'deviceTypeIds', 'servings')
     missing = [field for field in required if field not in metadata]
     if missing:
@@ -48,11 +76,28 @@ def parse_recipe(path: Path) -> tuple[dict, int | None]:
     recipe_id = metadata.get('recipeId')
     if recipe_id is not None and (not isinstance(recipe_id, int) or isinstance(recipe_id, bool) or recipe_id < 1):
         raise ValueError('recipeId must be a positive integer')
+
+    def asset_path(field: str) -> Path | None:
+        value = metadata.get(field)
+        if value is None:
+            return None
+        if not isinstance(value, str) or not value:
+            raise ValueError(f'{field} must be a non-empty path string')
+        asset = Path(value).expanduser()
+        if not asset.is_absolute():
+            asset = path.parent / asset
+        asset = asset.resolve()
+        if not asset.is_file():
+            raise ValueError(f'{field} image file does not exist: {asset}')
+        return asset
+
+    thumbnail_path = asset_path('thumbnail')
+    details_image_path = asset_path('detailsImage')
     ingredient_groups = [
         {
-            'name': '',
+            'name': metadata.get('ingredientGroupName', ''),
             'isDefault': True,
-            'ingredients': [{'name': value, 'amount': '', 'unit': '', 'isOptional': False} for value in ingredients],
+            'ingredients': ingredients,
         }
     ]
     payload = {
@@ -71,14 +116,14 @@ def parse_recipe(path: Path) -> tuple[dict, int | None]:
                 'preparationTime': int(metadata.get('preparationTime', 0)),
                 'readyInTime': int(metadata.get('readyInTime', 0)),
                 'ingredientGroups': ingredient_groups,
-                'steps': [{'title': metadata['title'], 'description': value, 'mode': None} for value in steps],
+                'steps': steps,
             }
         ],
     }
-    for optional in ('categoryIds', 'complexityId', 'hintsAndTips'):
+    for optional in ('categoryIds', 'complexityId', 'hintsAndTips', 'nutrients'):
         if optional in metadata:
             payload[optional] = metadata[optional]
-    return payload, recipe_id
+    return payload, recipe_id, thumbnail_path, details_image_path
 
 
 def main() -> int:
@@ -92,7 +137,7 @@ def main() -> int:
     failed = False
     for path in files:
         try:
-            payload, recipe_id = parse_recipe(path)
+            payload, recipe_id, thumbnail_path, details_image_path = parse_recipe(path)
             target = output / f'{path.stem}.json'
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
             id_path = target.with_suffix('.id')
@@ -100,6 +145,12 @@ def main() -> int:
                 id_path.write_text(f'{recipe_id}\n', encoding='utf-8')
             else:
                 id_path.unlink(missing_ok=True)
+            for suffix, asset in (('.thumbnail', thumbnail_path), ('.details-image', details_image_path)):
+                asset_sidecar = target.with_suffix(suffix)
+                if asset is None:
+                    asset_sidecar.unlink(missing_ok=True)
+                else:
+                    asset_sidecar.write_text(f'{asset}\n', encoding='utf-8')
             print(f'Converted {path} -> {target}')
         except (OSError, ValueError, TypeError) as exc:
             failed = True

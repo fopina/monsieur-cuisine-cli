@@ -31,9 +31,11 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required front matter: `title`, `languageLocale`, `deviceTypeIds` (integer array), and `servings` (positive integer). Optional fields: `recipeId` (positive integer; selects update instead of create when publishing), `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, and `hintsAndTips`.
+Required front matter: `title`, `languageLocale`, `deviceTypeIds` (integer array), and `servings` (positive integer). Optional fields: `recipeId` (positive integer; selects update instead of create when publishing), `thumbnail` and `detailsImage` (image paths relative to the Markdown file), `ingredientGroupName`, `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
 
 Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
+
+To retain structured ingredient data or machine modes, append hidden Markdown annotations to the readable line: `<!-- mc-ingredient: {"amount":"100","unit":"g","isOptional":false} -->` and `<!-- mc-mode: {"type":"slow_cooking","deviceSettings":[{"time":900,"temperature":50,"order":0}]} -->`. When publishing, declared images are passed to the CLI's image-upload options for both creation and update; the generated payload never reuses old API media IDs.
 
 ## Use in a cookbook repository
 
