@@ -4,14 +4,14 @@ This composite GitHub Action validates Markdown recipes and converts each one to
 
 ## Recipe format
 
-Store recipes as `.md` files under `recipes/`. Use the first-level Markdown heading (`#`) as the recipe title. The text immediately after it is the description, and an image immediately after that text is used as the cover image for uploads. Put the other recipe metadata in a visible Markdown table under `## Recipe`, then add `## Ingredients` and `## Steps` sections.
+Store recipes as `.md` files under `recipes/`. Use the first-level Markdown heading (`#`) as the recipe title. The text immediately after it is the description, and an image immediately after that text is used as the details photo. The action creates an 800×600 thumbnail from a top-left 4:3 crop of that image; when the source is smaller, it keeps the largest available 4:3 crop without enlarging it. Put the other recipe metadata in a visible Markdown table under `## Recipe`, then add `## Ingredients` and `## Steps` sections.
 
 ```markdown
 # Tomato soup
 
 A simple weeknight soup.
 
-![Tomato soup cover](images/tomato-soup.jpg)
+![Tomato soup details photo](images/tomato-soup.jpg)
 
 ## Recipe
 
@@ -36,7 +36,7 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required table fields: `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` as a positive count followed by its unit in parentheses, such as `4 (bowls)` or `2 (frasco)`. Required Markdown heading: recipe title as the first-level heading. Optional table fields: `recipeId` (positive integer; selects update instead of create when publishing), `detailsImage` (image path relative to the Markdown file), `ingredientGroupName`, `status` (defaults to `draft`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
+Required table fields: `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` as a positive count followed by its unit in parentheses, such as `4 (bowls)` or `2 (frasco)`. Required Markdown heading: recipe title as the first-level heading. Optional table fields: `recipeId` (positive integer; selects update instead of create when publishing), `ingredientGroupName`, `status` (defaults to `draft`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
 
 Nutrition can be supplied as a table under `## Nutrition` with `Nutrient`, `Amount`, and `Unit` columns. Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 

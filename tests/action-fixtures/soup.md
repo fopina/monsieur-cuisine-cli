@@ -2,7 +2,7 @@
 
 A simple weeknight soup.
 
-![Tomato soup cover](assets/tiny.png)
+![Tomato soup details photo](assets/tiny.png)
 
 ## Recipe
 

@@ -66,7 +66,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         return asset
 
     thumbnail_path = _resolve_asset(path, cover_image) if cover_image else asset_path('thumbnail')
-    details_image_path = asset_path('detailsImage')
+    details_image_path = thumbnail_path if cover_image else asset_path('detailsImage')
     ingredients = []
     for line in section_lines('ingredients'):
         item = re.sub(r'^[-*+]\s+', '', line)
@@ -202,6 +202,27 @@ def _resolve_asset(path: Path, value: str) -> Path:
     return asset
 
 
+def _create_thumbnail(source: Path, target: Path) -> Path:
+    from PIL import Image, ImageOps
+
+    with Image.open(source) as image:
+        image = ImageOps.exif_transpose(image)
+        width, height = image.size
+        units = min(width // 4, height // 3)
+        if units:
+            crop_width, crop_height = 4 * units, 3 * units
+        elif width / height > 4 / 3:
+            crop_width, crop_height = max(1, int(height * 4 / 3)), height
+        else:
+            crop_width, crop_height = width, max(1, int(width * 3 / 4))
+        crop = image.crop((0, 0, crop_width, crop_height))
+        if crop_width >= 800 and crop_height >= 600:
+            crop = crop.resize((800, 600), Image.Resampling.LANCZOS)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        crop.convert('RGB').save(target, format='JPEG', quality=90, optimize=True)
+    return target
+
+
 def _parse_metadata_value(field: str, value: str):
     value = value.strip().strip('`')
     if field == 'servings':
@@ -234,6 +255,8 @@ def main() -> int:
     for path in files:
         try:
             payload, recipe_id, thumbnail_path, details_image_path = parse_recipe(path)
+            if thumbnail_path and thumbnail_path == details_image_path:
+                thumbnail_path = _create_thumbnail(thumbnail_path, output / f'{path.stem}.thumbnail.jpg')
             target = output / f'{path.stem}.json'
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
             id_path = target.with_suffix('.id')
