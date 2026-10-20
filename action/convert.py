@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 
 def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None]:
@@ -239,6 +240,13 @@ def _parse_metadata_value(field: str, value: str):
             parsed = [parsed]
         return [int(item) for item in parsed]
     if field in {'recipeid', 'preparationtime', 'readyintime', 'complexityid'}:
+        if field == 'recipeid':
+            link = re.fullmatch(r'\[[^\]]+\]\((https?://[^)]+)\)', value)
+            if link:
+                identifiers = parse_qs(urlparse(link.group(1)).query).get('recipe-id', [])
+                if len(identifiers) != 1:
+                    raise ValueError('recipeId link must include one recipe-id query parameter')
+                value = identifiers[0]
         return int(value)
     return value
 
@@ -260,6 +268,8 @@ def main() -> int:
             target = output / f'{path.stem}.json'
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
             id_path = target.with_suffix('.id')
+            source_path = target.with_suffix('.source')
+            source_path.write_text(f'{path.resolve()}\n', encoding='utf-8')
             if recipe_id is not None:
                 id_path.write_text(f'{recipe_id}\n', encoding='utf-8')
             else:
