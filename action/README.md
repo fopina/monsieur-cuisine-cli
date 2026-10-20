@@ -36,7 +36,7 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required table fields: `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` as a positive count followed by its unit in parentheses, such as `4 (bowls)` or `2 (frasco)`. Required Markdown heading: recipe title as the first-level heading. Optional table fields: `recipeId` (positive integer; selects update instead of create when publishing), `ingredientGroupName`, `status` (defaults to `draft`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
+Required table fields: `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` as a positive count followed by its unit in parentheses, such as `4 (bowls)` or `2 (frasco)`. Required Markdown heading: recipe title as the first-level heading. Optional table fields: `recipeId` (positive integer; selects update instead of create when publishing), `ingredientGroupName`, `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`. Recipes are converted with `status: private`; status is managed by the action rather than Markdown.
 
 Nutrition can be supplied as a table under `## Nutrition` with `Nutrient`, `Amount`, and `Unit` columns. Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 
