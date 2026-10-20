@@ -1,0 +1,22 @@
+name: Test cookbook action
+on:
+  push:
+    branches: [main, github-action-cookbook]
+  pull_request:
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Convert sample recipe
+        env:
+          RECIPE_GLOB: tests/action-fixtures/*.md
+          OUTPUT_DIR: ${{ runner.temp }}/recipe-json
+        run: python action/convert.py
+      - name: Check generated payload
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/recipe-json
+        run: python -c 'import json, os; p=json.load(open(os.path.join(os.environ["OUTPUT_DIR"], "soup.json"))); assert p["title"] == "Tomato soup"; assert len(p["servingSizes"][0]["steps"]) == 2'
