@@ -6,8 +6,9 @@ import json
 import os
 import re
 import sys
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 
 def parse_recipe(path: Path) -> dict:
