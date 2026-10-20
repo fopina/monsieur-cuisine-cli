@@ -11,6 +11,8 @@ from pathlib import Path
 
 def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None]:
     text = path.read_text(encoding='utf-8')
+    title_match = re.search(r'^#\s+(.+?)\s*#*\s*$', text, re.MULTILINE)
+    title = title_match.group(1).strip() if title_match else ''
     sections = {}
     current = None
     for line in text.splitlines():
@@ -89,15 +91,17 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         if annotation:
             item = item[: annotation.start()].strip()
         title_match = re.match(r'^\*\*(.+?)\*\*:\s*(.*)$', item)
-        step_title = title_match.group(1) if title_match else metadata.get('title', path.stem)
+        step_title = title_match.group(1) if title_match else title
         description = title_match.group(2) if title_match else item
         if mode is not None and not isinstance(mode, dict):
             raise ValueError('mc-mode annotation must be a JSON object')
         steps.append({'title': step_title, 'description': description, 'mode': mode})
-    required = ('title', 'languagelocale', 'devicetypeids', 'servings')
+    required = ('languagelocale', 'devicetypeids', 'servings')
     missing = [field for field in required if field not in metadata]
     if missing:
         raise ValueError(f'missing Recipe table fields: {", ".join(missing)}')
+    if not title:
+        raise ValueError('add a recipe title as the first-level Markdown heading (for example, # Tomato soup)')
     if not ingredients:
         raise ValueError('add at least one item under ## Ingredients')
     if not steps:
@@ -124,7 +128,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         'source': 'member',
         'languageLocale': metadata['languagelocale'],
         'deviceTypeIds': device_ids,
-        'title': metadata['title'],
+        'title': title,
         'description': metadata.get('description', ''),
         'servingSizes': [
             {
