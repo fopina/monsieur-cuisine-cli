@@ -8,29 +8,64 @@ import re
 import sys
 from pathlib import Path
 
-import tomllib
-
 
 def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None]:
     text = path.read_text(encoding='utf-8')
-    if not text.startswith('+++\n'):
-        raise ValueError('expected TOML front matter delimited by +++')
-    try:
-        _, metadata_text, body = text.split('+++', 2)
-        metadata = tomllib.loads(metadata_text)
-    except (ValueError, tomllib.TOMLDecodeError) as exc:
-        raise ValueError(f'invalid TOML front matter: {exc}') from exc
     sections = {}
     current = None
-    for line in body.splitlines():
+    for line in text.splitlines():
         heading = re.match(r'^##\s+(.+?)\s*$', line)
         if heading:
-            current = heading.group(1).strip().lower()
+            current = heading.group(1).strip().casefold()
             sections[current] = []
         elif current and line.strip():
             sections[current].append(line.strip())
+
+    metadata = {}
+    for row in _table_rows(sections.get('recipe', [])):
+        if len(row) < 2:
+            continue
+        field, value = row[0].strip().casefold(), row[1].strip()
+        if field in {'field', 'property'} or not field:
+            continue
+        metadata[field] = _parse_metadata_value(field, value)
+
+    nutrients = []
+    for row in _table_rows(sections.get('nutrition', [])):
+        if len(row) < 3 or row[0].strip().casefold() in {'nutrient', 'name'}:
+            continue
+        amount = row[1].strip()
+        nutrients.append(
+            {
+                'name': row[0].strip(),
+                'amount': int(amount) if amount.isdigit() else amount,
+                'unit': row[2].strip(),
+            }
+        )
+    if nutrients:
+        metadata['nutrients'] = nutrients
+
+    def section_lines(name: str) -> list[str]:
+        return sections.get(name, [])
+
+    def asset_path(field: str) -> Path | None:
+        value = metadata.get(field.casefold())
+        if value is None:
+            return None
+        if not isinstance(value, str) or not value:
+            raise ValueError(f'{field} must be a non-empty path string')
+        asset = Path(value).expanduser()
+        if not asset.is_absolute():
+            asset = path.parent / asset
+        asset = asset.resolve()
+        if not asset.is_file():
+            raise ValueError(f'{field} image file does not exist: {asset}')
+        return asset
+
+    thumbnail_path = asset_path('thumbnail')
+    details_image_path = asset_path('detailsImage')
     ingredients = []
-    for line in sections.get('ingredients', []):
+    for line in section_lines('ingredients'):
         item = re.sub(r'^[-*+]\s+', '', line)
         annotation = re.search(r'<!--\s*mc-ingredient:\s*(\{.*\})\s*-->', item)
         details = json.loads(annotation.group(1)) if annotation else {}
@@ -47,7 +82,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             }
         )
     steps = []
-    for line in sections.get('steps', []):
+    for line in section_lines('steps'):
         item = re.sub(r'^\d+[.)]\s+', '', line)
         annotation = re.search(r'<!--\s*mc-mode:\s*(\{.*\})\s*-->', item)
         mode = json.loads(annotation.group(1)) if annotation else None
@@ -59,10 +94,10 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         if mode is not None and not isinstance(mode, dict):
             raise ValueError('mc-mode annotation must be a JSON object')
         steps.append({'title': step_title, 'description': description, 'mode': mode})
-    required = ('title', 'languageLocale', 'deviceTypeIds', 'servings')
+    required = ('title', 'languagelocale', 'devicetypeids', 'servings')
     missing = [field for field in required if field not in metadata]
     if missing:
-        raise ValueError(f'missing front matter fields: {", ".join(missing)}')
+        raise ValueError(f'missing Recipe table fields: {", ".join(missing)}')
     if not ingredients:
         raise ValueError('add at least one item under ## Ingredients')
     if not steps:
@@ -70,32 +105,16 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
     servings = metadata['servings']
     if not isinstance(servings, int) or isinstance(servings, bool) or servings < 1:
         raise ValueError('servings must be a positive integer')
-    device_ids = metadata['deviceTypeIds']
+    device_ids = metadata['devicetypeids']
     if not isinstance(device_ids, list) or not device_ids or any(type(value) is not int for value in device_ids):
         raise ValueError('deviceTypeIds must be a non-empty list of integer IDs')
-    recipe_id = metadata.get('recipeId')
+    recipe_id = metadata.get('recipeid')
     if recipe_id is not None and (not isinstance(recipe_id, int) or isinstance(recipe_id, bool) or recipe_id < 1):
         raise ValueError('recipeId must be a positive integer')
 
-    def asset_path(field: str) -> Path | None:
-        value = metadata.get(field)
-        if value is None:
-            return None
-        if not isinstance(value, str) or not value:
-            raise ValueError(f'{field} must be a non-empty path string')
-        asset = Path(value).expanduser()
-        if not asset.is_absolute():
-            asset = path.parent / asset
-        asset = asset.resolve()
-        if not asset.is_file():
-            raise ValueError(f'{field} image file does not exist: {asset}')
-        return asset
-
-    thumbnail_path = asset_path('thumbnail')
-    details_image_path = asset_path('detailsImage')
     ingredient_groups = [
         {
-            'name': metadata.get('ingredientGroupName', ''),
+            'name': metadata.get('ingredientgroupname', ''),
             'isDefault': True,
             'ingredients': ingredients,
         }
@@ -103,7 +122,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
     payload = {
         'status': metadata.get('status', 'draft'),
         'source': 'member',
-        'languageLocale': metadata['languageLocale'],
+        'languageLocale': metadata['languagelocale'],
         'deviceTypeIds': device_ids,
         'title': metadata['title'],
         'description': metadata.get('description', ''),
@@ -111,19 +130,51 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             {
                 'amount': servings,
                 'isDefault': True,
-                'unit': metadata.get('servingUnit', 'servings'),
+                'unit': metadata.get('servingunit', 'servings'),
                 'instruction': '',
-                'preparationTime': int(metadata.get('preparationTime', 0)),
-                'readyInTime': int(metadata.get('readyInTime', 0)),
+                'preparationTime': int(metadata.get('preparationtime', 0)),
+                'readyInTime': int(metadata.get('readyintime', 0)),
                 'ingredientGroups': ingredient_groups,
                 'steps': steps,
             }
         ],
     }
-    for optional in ('categoryIds', 'complexityId', 'hintsAndTips', 'nutrients'):
-        if optional in metadata:
-            payload[optional] = metadata[optional]
+    for key, field in (
+        ('categoryids', 'categoryIds'),
+        ('complexityid', 'complexityId'),
+        ('hintsandtips', 'hintsAndTips'),
+        ('nutrients', 'nutrients'),
+    ):
+        if key in metadata:
+            payload[field] = metadata[key]
     return payload, recipe_id, thumbnail_path, details_image_path
+
+
+def _table_rows(lines: list[str]) -> list[list[str]]:
+    rows = []
+    for line in lines:
+        if '|' not in line:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        if cells and all(re.fullmatch(r':?-{3,}:?', cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def _parse_metadata_value(field: str, value: str):
+    value = value.strip().strip('`')
+    if field in {'devicetypeids', 'categoryids'}:
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            parsed = [item.strip() for item in value.split(',') if item.strip()]
+        if not isinstance(parsed, list):
+            parsed = [parsed]
+        return [int(item) for item in parsed]
+    if field in {'servings', 'recipeid', 'preparationtime', 'readyintime', 'complexityid'}:
+        return int(value)
+    return value
 
 
 def main() -> int:

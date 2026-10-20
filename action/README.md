@@ -4,19 +4,20 @@ This composite GitHub Action validates Markdown recipes and converts each one to
 
 ## Recipe format
 
-Store recipes as `.md` files under `recipes/`. Start each file with TOML front matter between `+++` delimiters, then add `## Ingredients` and `## Steps` sections. TOML is used because it is readable and parsed with Python's standard library; no third-party parser is needed.
+Store recipes as `.md` files under `recipes/`. Put recipe metadata in a visible Markdown table under `## Recipe`, then add `## Ingredients` and `## Steps` sections.
 
 ```markdown
-+++
-title = "Tomato soup"
-languageLocale = "en-US"
-deviceTypeIds = [13]
-servings = 4
-preparationTime = 10
-readyInTime = 35
-+++
+## Recipe
 
-A simple weeknight soup.
+| Field | Value |
+| --- | --- |
+| title | Tomato soup |
+| languageLocale | en-US |
+| deviceTypeIds | 13 |
+| servings | 4 |
+| preparationTime | 10 |
+| readyInTime | 35 |
+| description | A simple weeknight soup. |
 
 ## Ingredients
 
@@ -31,9 +32,9 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required front matter: `title`, `languageLocale`, `deviceTypeIds` (integer array), and `servings` (positive integer). Optional fields: `recipeId` (positive integer; selects update instead of create when publishing), `thumbnail` and `detailsImage` (image paths relative to the Markdown file), `ingredientGroupName`, `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
+Required table fields: `title`, `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` (positive integer). Optional fields: `recipeId` (positive integer; selects update instead of create when publishing), `thumbnail` and `detailsImage` (image paths relative to the Markdown file), `ingredientGroupName`, `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`.
 
-Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
+Nutrition can be supplied as a table under `## Nutrition` with `Nutrient`, `Amount`, and `Unit` columns. Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 
 To retain structured ingredient data or machine modes, append hidden Markdown annotations to the readable line: `<!-- mc-ingredient: {"amount":"100","unit":"g","isOptional":false} -->` and `<!-- mc-mode: {"type":"slow_cooking","deviceSettings":[{"time":900,"temperature":50,"order":0}]} -->`. When publishing, declared images are passed to the CLI's image-upload options for both creation and update; the generated payload never reuses old API media IDs.
 
