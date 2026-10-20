@@ -76,6 +76,37 @@ def list_my_recipes(
         raise RuntimeError('Page must be 1 or greater.')
     if size < 1:
         raise RuntimeError('Page size must be 1 or greater.')
+    query = urllib.parse.urlencode(
+        [
+            ('size', size),
+            ('page', page),
+            ('sortBy[0][field]', 'title'),
+            ('sortBy[0][direction]', 'ASC'),
+            *((('filters[status][]', status) for status in ('draft', 'pending', 'private-publish', 'publish', 'rejected'))),
+            ('q', ''),
+        ]
+    )
+    return call_api(
+        f'api/v3/auth/user/recipes?{query}',
+        language=language,
+        config_path=config_path,
+        session_file=session_file,
+    )
+
+
+def list_my_recipes_v1(
+    page: int = 1,
+    size: int = 20,
+    config_path=None,
+    *,
+    language: str = 'en-US',
+    session_file: str = 'session.json',
+) -> object | None:
+    """Fetch a page of authored recipes through the retained legacy v1 endpoint."""
+    if page < 1:
+        raise RuntimeError('Page must be 1 or greater.')
+    if size < 1:
+        raise RuntimeError('Page size must be 1 or greater.')
     return call_api(
         f'api/v1/my-recipes/page/{page}/size/{size}',
         language=language,
@@ -91,7 +122,68 @@ def get_my_recipe(
     language: str = 'en-US',
     session_file: str = 'session.json',
 ) -> object | None:
-    """Fetch an authored recipe by its ID."""
+    """Fetch an authored recipe by its ID using the current v3 endpoint."""
+    if recipe_id < 1:
+        raise RuntimeError('Recipe ID must be a positive integer.')
+    return call_api(
+        f'api/v3/auth/user/recipes/{recipe_id}',
+        language=language,
+        config_path=config_path,
+        session_file=session_file,
+    )
+
+
+def create_my_recipe(
+    payload: dict,
+    config_path=None,
+    *,
+    language: str = 'en-US',
+    session_file: str = 'session.json',
+) -> object | None:
+    """Create an authored recipe using the observed v3 endpoint."""
+    if not isinstance(payload, dict):
+        raise RuntimeError('Recipe payload must be a JSON object.')
+    return call_api(
+        'api/v3/auth/user/recipes/',
+        method='POST',
+        data=payload,
+        language=language,
+        config_path=config_path,
+        session_file=session_file,
+    )
+
+
+def update_my_recipe(
+    recipe_id: int,
+    payload: dict,
+    config_path=None,
+    *,
+    language: str = 'en-US',
+    session_file: str = 'session.json',
+) -> object | None:
+    """Update an authored recipe using the observed v3 endpoint."""
+    if recipe_id < 1:
+        raise RuntimeError('Recipe ID must be a positive integer.')
+    if not isinstance(payload, dict):
+        raise RuntimeError('Recipe payload must be a JSON object.')
+    return call_api(
+        f'api/v3/auth/user/recipes/{recipe_id}',
+        method='PUT',
+        data=payload,
+        language=language,
+        config_path=config_path,
+        session_file=session_file,
+    )
+
+
+def get_my_recipe_v1(
+    recipe_id: int,
+    config_path=None,
+    *,
+    language: str = 'en-US',
+    session_file: str = 'session.json',
+) -> object | None:
+    """Fetch an authored recipe through the retained legacy v1 endpoint."""
     if recipe_id < 1:
         raise RuntimeError('Recipe ID must be a positive integer.')
     return call_api(
