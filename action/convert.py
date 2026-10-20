@@ -11,7 +11,7 @@ from pathlib import Path
 import tomllib
 
 
-def parse_recipe(path: Path) -> dict:
+def parse_recipe(path: Path) -> tuple[dict, int | None]:
     text = path.read_text(encoding='utf-8')
     if not text.startswith('+++\n'):
         raise ValueError('expected TOML front matter delimited by +++')
@@ -45,6 +45,9 @@ def parse_recipe(path: Path) -> dict:
     device_ids = metadata['deviceTypeIds']
     if not isinstance(device_ids, list) or not device_ids or any(type(value) is not int for value in device_ids):
         raise ValueError('deviceTypeIds must be a non-empty list of integer IDs')
+    recipe_id = metadata.get('recipeId')
+    if recipe_id is not None and (not isinstance(recipe_id, int) or isinstance(recipe_id, bool) or recipe_id < 1):
+        raise ValueError('recipeId must be a positive integer')
     ingredient_groups = [
         {
             'name': '',
@@ -75,7 +78,7 @@ def parse_recipe(path: Path) -> dict:
     for optional in ('categoryIds', 'complexityId', 'hintsAndTips'):
         if optional in metadata:
             payload[optional] = metadata[optional]
-    return payload
+    return payload, recipe_id
 
 
 def main() -> int:
@@ -89,9 +92,14 @@ def main() -> int:
     failed = False
     for path in files:
         try:
-            payload = parse_recipe(path)
+            payload, recipe_id = parse_recipe(path)
             target = output / f'{path.stem}.json'
             target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            id_path = target.with_suffix('.id')
+            if recipe_id is not None:
+                id_path.write_text(f'{recipe_id}\n', encoding='utf-8')
+            else:
+                id_path.unlink(missing_ok=True)
             print(f'Converted {path} -> {target}')
         except (OSError, ValueError, TypeError) as exc:
             failed = True

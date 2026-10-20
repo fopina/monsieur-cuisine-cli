@@ -3,6 +3,7 @@ title = "Tomato soup"
 languageLocale = "en-US"
 deviceTypeIds = [13]
 servings = 4
+recipeId = 42
 +++
 
 ## Ingredients

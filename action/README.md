@@ -31,7 +31,7 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required front matter: `title`, `languageLocale`, `deviceTypeIds` (integer array), and `servings` (positive integer). Optional fields: `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, and `hintsAndTips`.
+Required front matter: `title`, `languageLocale`, `deviceTypeIds` (integer array), and `servings` (positive integer). Optional fields: `recipeId` (positive integer; selects update instead of create when publishing), `status` (defaults to `draft`), `description`, `servingUnit` (defaults to `servings`), `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, and `hintsAndTips`.
 
 Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 
