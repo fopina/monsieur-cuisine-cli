@@ -62,12 +62,14 @@ Use `recipes list` to list recipes in your account, and `recipes get` to fetch o
 ```sh
 uv run monsieur-cuisine recipes list
 uv run monsieur-cuisine recipes list --page 2 --size 50
+uv run monsieur-cuisine recipes list --use-v1
 uv run monsieur-cuisine recipes get 238467
+uv run monsieur-cuisine recipes get 238467 --use-v1
 uv run monsieur-cuisine recipes create --data '{"status":"draft","source":"member","languageLocale":"pt-PT","deviceTypeIds":[13],"title":"My recipe","servingSizes":[]}'
 uv run monsieur-cuisine recipes update 238467 --data '{"status":"draft","source":"member","languageLocale":"pt-PT","deviceTypeIds":[13],"title":"Updated recipe","servingSizes":[]}'
 ```
 
-`recipes list` and `recipes get` use the observed authenticated v3 routes. The list request includes page and size, sorts by title ascending, and asks for draft, pending, private-publish, publish, and rejected recipes with an empty search query. The previous v1 routes remain available as `recipes list-v1` and `recipes get-v1`; both print a deprecation warning. These direct API requests use the saved mobile-app bearer token. The global `--lang` option selects another locale.
+`recipes list` and `recipes get` use the observed authenticated v3 routes by default. The list request includes page and size, sorts by title ascending, and asks for draft, pending, private-publish, publish, and rejected recipes with an empty search query. Pass `--use-v1` to either command to use its deprecated v1 route; the CLI prints a warning when this flag is set. These direct API requests use the saved mobile-app bearer token. The global `--lang` option selects another locale.
 
 Use `recipes url` to resolve a public recipe page URL. It extracts `recipeId` and the viewer locale from the page, calls the public recipe detail endpoint, and returns the ID, locale, and API response:
 
@@ -127,7 +129,7 @@ The web profile example requests `GET api/v1/users` through `proxy-api` and retu
 
 The website's recipe editor requested `GET api/v3/auth/user/recipes/{id}` through `proxy-api`; its response contained `data.recipe` with the full authored recipe. The CLI uses that observed path directly against `mc-api.tecpal.com` for `recipes get`, with its existing bearer-token transport.
 
-The HAR from the “all my recipes” page shows a list request to `GET api/v3/auth/user/recipes` with `size`, `page`, `sortBy[0][field]=title`, `sortBy[0][direction]=ASC`, repeated `filters[status][]` values (`draft`, `pending`, `private-publish`, `publish`, `rejected`), and an empty `q`. Its response has pagination metadata and a `recipes` array inside `data`. The CLI's `recipes list` now uses this route and parameter set. `recipes get-v1` and `recipes list-v1` retain the old `GET api/v1/my-recipes/{id}` and `GET api/v1/my-recipes/page/{page}/size/{size}` routes as deprecated fallbacks. Direct bearer-token compatibility with these web-discovered v3 routes has not yet been verified; the proxy requests establish the routes and response shapes, not that every mobile-authenticated account can call them.
+The HAR from the “all my recipes” page shows a list request to `GET api/v3/auth/user/recipes` with `size`, `page`, `sortBy[0][field]=title`, `sortBy[0][direction]=ASC`, repeated `filters[status][]` values (`draft`, `pending`, `private-publish`, `publish`, `rejected`), and an empty `q`. Its response has pagination metadata and a `recipes` array inside `data`. The CLI's `recipes list` now uses this route and parameter set. Pass `--use-v1` to `recipes list` or `recipes get` to select the retained deprecated routes `GET api/v1/my-recipes/page/{page}/size/{size}` or `GET api/v1/my-recipes/{id}`. Direct bearer-token compatibility with these web-discovered v3 routes has not yet been verified; the proxy requests establish the routes and response shapes, not that every mobile-authenticated account can call them.
 
 The recipe editor HAR also shows creation as `POST api/v3/auth/user/recipes/` with the recipe object in `payload`; the observed request returned HTTP 201 and `data.recipe`. The sample created a draft and included `status`, `source`, `languageLocale`, `deviceTypeIds`, `title`, thumbnail/details image media IDs, `complexityId`, `allowSocialSharing`, `categoryIds`, `nutrients`, and `servingSizes` (including steps and ingredient groups). The CLI exposes this as `recipes create --data '{...}'`, sending that object as JSON directly to the API. A v1 create route was not identified, so no v1 fallback is available for creation. Use valid IDs and payload fields for the target account and locale; the captured example's IDs are specific to that website account/content.
 

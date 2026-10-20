@@ -74,64 +74,45 @@ class Update(ContextProperties, Recipes.Command):
 
 
 class List(ContextProperties, Recipes.Command):
-    """List your recipes using the v3 API."""
+    """List your recipes using the v3 API, or the deprecated v1 route on request."""
 
     page: int = classyclick.Option(default=1, help='Page number (starting at 1).')
     size: int = classyclick.Option(default=20, help='Number of recipes per page.')
+    use_v1: bool = classyclick.Option(default=False, help='Use the deprecated v1 list endpoint.')
 
     def __call__(self):
         try:
-            recipes = list_my_recipes(
-                self.page, self.size, self.config_path, language=self.language, session_file=self.session_file
-            )
-        except RuntimeError as exc:
-            raise click.ClickException(str(exc)) from exc
-        click.echo(json.dumps(recipes, indent=2, ensure_ascii=False))
-
-
-class ListV1(ContextProperties, Recipes.Command):
-    """List your recipes using the deprecated v1 endpoint."""
-
-    page: int = classyclick.Option(default=1, help='Page number (starting at 1).')
-    size: int = classyclick.Option(default=20, help='Number of recipes per page.')
-
-    def __call__(self):
-        click.echo('Warning: recipes list-v1 uses the deprecated API v1 route.', err=True)
-        try:
-            recipes = list_my_recipes_v1(
-                self.page, self.size, self.config_path, language=self.language, session_file=self.session_file
-            )
+            if self.use_v1:
+                click.echo('Warning: --use-v1 selects the deprecated API v1 list route.', err=True)
+                recipes = list_my_recipes_v1(
+                    self.page, self.size, self.config_path, language=self.language, session_file=self.session_file
+                )
+            else:
+                recipes = list_my_recipes(
+                    self.page, self.size, self.config_path, language=self.language, session_file=self.session_file
+                )
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
         click.echo(json.dumps(recipes, indent=2, ensure_ascii=False))
 
 
 class Get(ContextProperties, Recipes.Command):
-    """Fetch one of your recipes by ID using the v3 API."""
+    """Fetch one of your recipes by ID using the v3 API, or the deprecated v1 route on request."""
 
     recipe_id: int = classyclick.Argument(help='Recipe ID.')
+    use_v1: bool = classyclick.Option(default=False, help='Use the deprecated v1 detail endpoint.')
 
     def __call__(self):
         try:
-            recipe = get_my_recipe(
-                self.recipe_id, self.config_path, language=self.language, session_file=self.session_file
-            )
-        except RuntimeError as exc:
-            raise click.ClickException(str(exc)) from exc
-        click.echo(json.dumps(recipe, indent=2, ensure_ascii=False))
-
-
-class GetV1(ContextProperties, Recipes.Command):
-    """Fetch one of your recipes by ID using the deprecated v1 endpoint."""
-
-    recipe_id: int = classyclick.Argument(help='Recipe ID.')
-
-    def __call__(self):
-        click.echo('Warning: recipes get-v1 uses the deprecated API v1 route.', err=True)
-        try:
-            recipe = get_my_recipe_v1(
-                self.recipe_id, self.config_path, language=self.language, session_file=self.session_file
-            )
+            if self.use_v1:
+                click.echo('Warning: --use-v1 selects the deprecated API v1 detail route.', err=True)
+                recipe = get_my_recipe_v1(
+                    self.recipe_id, self.config_path, language=self.language, session_file=self.session_file
+                )
+            else:
+                recipe = get_my_recipe(
+                    self.recipe_id, self.config_path, language=self.language, session_file=self.session_file
+                )
         except RuntimeError as exc:
             raise click.ClickException(str(exc)) from exc
         click.echo(json.dumps(recipe, indent=2, ensure_ascii=False))
