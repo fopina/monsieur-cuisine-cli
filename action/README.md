@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: fopina/monsieur-cuisine-cli/action@github-action-cookbook
+      - uses: fopina/monsieur-cuisine-cli@github-action-cookbook
         id: cookbook
       - uses: actions/upload-artifact@v4
         with:

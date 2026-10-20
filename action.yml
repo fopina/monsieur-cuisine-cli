@@ -24,4 +24,4 @@ runs:
       env:
         RECIPE_GLOB: ${{ inputs.recipes }}
         OUTPUT_DIR: ${{ inputs.output }}
-      run: python "${{ github.action_path }}/convert.py"
+      run: python "${{ github.action_path }}/action/convert.py"
