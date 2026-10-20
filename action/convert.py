@@ -106,9 +106,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         raise ValueError('add at least one item under ## Ingredients')
     if not steps:
         raise ValueError('add at least one numbered item under ## Steps')
-    servings = metadata['servings']
-    if not isinstance(servings, int) or isinstance(servings, bool) or servings < 1:
-        raise ValueError('servings must be a positive integer')
+    servings, serving_unit = metadata['servings']
     device_ids = metadata['devicetypeids']
     if not isinstance(device_ids, list) or not device_ids or any(type(value) is not int for value in device_ids):
         raise ValueError('deviceTypeIds must be a non-empty list of integer IDs')
@@ -134,7 +132,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             {
                 'amount': servings,
                 'isDefault': True,
-                'unit': metadata.get('servingunit', 'servings'),
+                'unit': serving_unit,
                 'instruction': '',
                 'preparationTime': int(metadata.get('preparationtime', 0)),
                 'readyInTime': int(metadata.get('readyintime', 0)),
@@ -168,6 +166,11 @@ def _table_rows(lines: list[str]) -> list[list[str]]:
 
 def _parse_metadata_value(field: str, value: str):
     value = value.strip().strip('`')
+    if field == 'servings':
+        match = re.fullmatch(r'(\d+)\s*\(([^()]+)\)', value)
+        if not match or int(match.group(1)) < 1 or not match.group(2).strip():
+            raise ValueError('servings must include a positive amount and unit, e.g. 4 (frasco)')
+        return int(match.group(1)), match.group(2).strip()
     if field in {'devicetypeids', 'categoryids'}:
         try:
             parsed = json.loads(value)
@@ -176,7 +179,7 @@ def _parse_metadata_value(field: str, value: str):
         if not isinstance(parsed, list):
             parsed = [parsed]
         return [int(item) for item in parsed]
-    if field in {'servings', 'recipeid', 'preparationtime', 'readyintime', 'complexityid'}:
+    if field in {'recipeid', 'preparationtime', 'readyintime', 'complexityid'}:
         return int(value)
     return value
 

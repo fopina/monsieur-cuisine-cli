@@ -6,7 +6,7 @@
 | --- | --- |
 | languageLocale | en-US |
 | deviceTypeIds | 13 |
-| servings | 4 |
+| servings | 4 (bowls) |
 | recipeId | 42 |
 | thumbnail | assets/tiny.png |
 
