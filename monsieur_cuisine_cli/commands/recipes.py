@@ -28,8 +28,8 @@ class Create(ContextProperties, Recipes.Command):
     """Create a recipe from a JSON payload using the v3 API."""
 
     data: str = classyclick.Option(required=True, help='Recipe payload as a JSON object.')
-    thumbnail: str | None = classyclick.Option(default=None, help='Upload a landscape thumbnail image file.')
-    details_image: str | None = classyclick.Option(default=None, help='Upload a landscape details image file.')
+    thumbnail: str = classyclick.Option(default=None, help='Upload a landscape thumbnail image file.')
+    details_image: str = classyclick.Option(default=None, help='Upload a landscape details image file.')
 
     def __call__(self):
         try:
@@ -61,8 +61,8 @@ class Update(ContextProperties, Recipes.Command):
 
     recipe_id: int = classyclick.Argument(help='Recipe ID.')
     data: str = classyclick.Option(required=True, help='Recipe payload as a JSON object.')
-    thumbnail: str | None = classyclick.Option(default=None, help='Upload a landscape thumbnail image file.')
-    details_image: str | None = classyclick.Option(default=None, help='Upload a landscape details image file.')
+    thumbnail: str = classyclick.Option(default=None, help='Upload a landscape thumbnail image file.')
+    details_image: str = classyclick.Option(default=None, help='Upload a landscape details image file.')
 
     def __call__(self):
         try:
