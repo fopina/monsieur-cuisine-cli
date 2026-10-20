@@ -123,7 +123,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         }
     ]
     payload = {
-        'status': 'private',
+        'status': 'private-publish',
         'source': 'member',
         'languageLocale': metadata['languagelocale'],
         'deviceTypeIds': device_ids,

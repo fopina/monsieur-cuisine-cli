@@ -39,7 +39,7 @@ jobs:
           out = os.environ['OUTPUT_DIR']
           recipe = json.load(open(os.path.join(out, 'soup.json')))
           size = recipe['servingSizes'][0]
-          assert recipe['status'] == 'private'
+          assert recipe['status'] == 'private-publish'
           assert recipe['title'] == 'Tomato soup'
           assert recipe['description'] == 'A simple weeknight soup.'
           assert size['isDefault'] is True
