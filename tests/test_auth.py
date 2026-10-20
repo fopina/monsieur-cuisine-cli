@@ -105,7 +105,9 @@ def test_login_completes_mocked_oauth_flow(tmp_path, monkeypatch):
 
     def fake_api_login(oauth, config_path, *, language, session_file):
         assert oauth['access_token'] == 'oauth-access'
-        assert oauth['id_token'] == 'oauth-id'
+        id_token_payload = oauth['id_token'].split('.')[1]
+        id_token_payload += '=' * (-len(id_token_payload) % 4)
+        assert json.loads(base64.urlsafe_b64decode(id_token_payload)) == {'nonce': 'fixed-state'}
         assert config_path == config
         assert language == 'de-DE'
         assert session_file == 'session.json'
