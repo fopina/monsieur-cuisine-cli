@@ -13,6 +13,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
     text = path.read_text(encoding='utf-8')
     title_match = re.search(r'^#\s+(.+?)\s*#*\s*$', text, re.MULTILINE)
     title = title_match.group(1).strip() if title_match else ''
+    description, cover_image = _recipe_intro(text)
     sections = {}
     current = None
     for line in text.splitlines():
@@ -64,7 +65,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             raise ValueError(f'{field} image file does not exist: {asset}')
         return asset
 
-    thumbnail_path = asset_path('thumbnail')
+    thumbnail_path = _resolve_asset(path, cover_image) if cover_image else asset_path('thumbnail')
     details_image_path = asset_path('detailsImage')
     ingredients = []
     for line in section_lines('ingredients'):
@@ -92,10 +93,10 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             item = item[: annotation.start()].strip()
         title_match = re.match(r'^\*\*(.+?)\*\*:\s*(.*)$', item)
         step_title = title_match.group(1) if title_match else title
-        description = title_match.group(2) if title_match else item
+        step_description = title_match.group(2) if title_match else item
         if mode is not None and not isinstance(mode, dict):
             raise ValueError('mc-mode annotation must be a JSON object')
-        steps.append({'title': step_title, 'description': description, 'mode': mode})
+        steps.append({'title': step_title, 'description': step_description, 'mode': mode})
     required = ('languagelocale', 'devicetypeids', 'servings')
     missing = [field for field in required if field not in metadata]
     if missing:
@@ -127,7 +128,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         'languageLocale': metadata['languagelocale'],
         'deviceTypeIds': device_ids,
         'title': title,
-        'description': metadata.get('description', ''),
+        'description': description,
         'servingSizes': [
             {
                 'amount': servings,
@@ -162,6 +163,43 @@ def _table_rows(lines: list[str]) -> list[list[str]]:
             continue
         rows.append(cells)
     return rows
+
+
+def _recipe_intro(text: str) -> tuple[str, str | None]:
+    lines = text.splitlines()
+    title_index = next((i for i, line in enumerate(lines) if re.match(r'^#\s+\S', line)), None)
+    if title_index is None:
+        return '', None
+    index = title_index + 1
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    if index == len(lines) or lines[index].startswith('## '):
+        return '', None
+
+    description_lines = []
+    while index < len(lines) and lines[index].strip() and not lines[index].startswith('## '):
+        if re.match(r'^!\[[^]]*\]\([^)]+\)$', lines[index].strip()):
+            break
+        description_lines.append(lines[index].strip())
+        index += 1
+    description = ' '.join(description_lines)
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    if index < len(lines):
+        image_match = re.fullmatch(r'!\[[^]]*\]\(([^)]+)\)', lines[index].strip())
+        if image_match:
+            return description, image_match.group(1).strip()
+    return description, None
+
+
+def _resolve_asset(path: Path, value: str) -> Path:
+    asset = Path(value).expanduser()
+    if not asset.is_absolute():
+        asset = path.parent / asset
+    asset = asset.resolve()
+    if not asset.is_file():
+        raise ValueError(f'cover image file does not exist: {asset}')
+    return asset
 
 
 def _parse_metadata_value(field: str, value: str):

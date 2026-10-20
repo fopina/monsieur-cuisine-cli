@@ -1,5 +1,9 @@
 # Tomato soup
 
+A simple weeknight soup.
+
+![Tomato soup cover](assets/tiny.png)
+
 ## Recipe
 
 | Field | Value |
@@ -8,7 +12,6 @@
 | deviceTypeIds | 13 |
 | servings | 4 (bowls) |
 | recipeId | 42 |
-| thumbnail | assets/tiny.png |
 
 ## Ingredients
 
