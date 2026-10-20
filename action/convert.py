@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Convert Markdown cookbook recipes into CLI-compatible recipe JSON."""
 
+from pathlib import Path
 import glob
 import json
 import os
 import re
 import sys
 import tomllib
-from pathlib import Path
 
 
 def parse_recipe(path: Path) -> dict:
