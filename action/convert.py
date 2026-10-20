@@ -61,6 +61,7 @@ def parse_recipe(path: Path) -> dict:
         'servingSizes': [
             {
                 'amount': servings,
+                'isDefault': True,
                 'unit': metadata.get('servingUnit', 'servings'),
                 'instruction': '',
                 'preparationTime': int(metadata.get('preparationTime', 0)),
