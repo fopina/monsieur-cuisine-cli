@@ -137,6 +137,8 @@ The update HAR shows `PUT api/v3/auth/user/recipes/{id}` with a recipe object in
 
 Recipe helpers unwrap the common top-level `data` envelope before printing results, matching the profile helper's behavior. This removes wrapper fields such as `code` and `message` while preserving the endpoint's resource keys (for example, `recipe` or `recipes`).
 
+The normalized outputs from live `profile`, `recipes list`, and `recipes get` calls are represented by redacted fixtures in `tests/fixtures/`; unit tests use them to guard the command output shape. Account identifiers, personal details, recipe text, media URLs, and timestamps are replaced with safe examples.
+
 These observations come from Android app version 1.4.2 and website request examples, not a supported public API contract.
 
 ## Disclaimer
