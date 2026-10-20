@@ -40,9 +40,7 @@ class Create(ContextProperties, Recipes.Command):
     def __call__(self):
         try:
             payload = json.loads(self.data)
-            recipe = create_my_recipe(
-                payload, self.config_path, language=self.language, session_file=self.session_file
-            )
+            recipe = create_my_recipe(payload, self.config_path, language=self.language, session_file=self.session_file)
         except json.JSONDecodeError as exc:
             raise click.ClickException(f'--data must contain valid JSON: {exc}') from exc
         except RuntimeError as exc:

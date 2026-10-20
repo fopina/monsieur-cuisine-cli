@@ -82,7 +82,12 @@ def list_my_recipes(
             ('page', page),
             ('sortBy[0][field]', 'title'),
             ('sortBy[0][direction]', 'ASC'),
-            *((('filters[status][]', status) for status in ('draft', 'pending', 'private-publish', 'publish', 'rejected'))),
+            *(
+                (
+                    ('filters[status][]', status)
+                    for status in ('draft', 'pending', 'private-publish', 'publish', 'rejected')
+                )
+            ),
             ('q', ''),
         ]
     )
