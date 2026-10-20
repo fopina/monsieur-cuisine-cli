@@ -34,7 +34,7 @@ def test_api_command_reports_invalid_json():
 
 
 def test_recipes_get_reports_runtime_error(monkeypatch):
-    from monsieur_cuisine_cli.commands import recipes
+    from monsieur_cuisine_cli.api import recipes
 
     def fail(*args, **kwargs):
         raise RuntimeError('session is missing')
