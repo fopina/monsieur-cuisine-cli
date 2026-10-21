@@ -9,6 +9,34 @@ import sys
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from monsieur_cuisine_cli.api.recipe_validation import (
+    canonical_locale,
+    resolve_markdown_option,
+    validate_recipe_options,
+)
+from monsieur_cuisine_cli.locales import RECIPE_FIELD_LABELS
+
+_METADATA_FIELDS = {
+    'languagelocale',
+    'locale',
+    'language',
+    'language/locale',
+    'devicetypeids',
+    'servings',
+    'recipeid',
+    'ingredientgroupname',
+    'preparationtime',
+    'readyintime',
+    'categoryids',
+    'complexityid',
+    'hintsandtips',
+    'nutrients',
+    'thumbnail',
+    'detailsimage',
+}
+
 
 def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None]:
     text = path.read_text(encoding='utf-8')
@@ -26,13 +54,38 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             sections[current].append(line.strip())
 
     metadata = {}
+    raw_metadata_rows = []
     for row in _table_rows(sections.get('recipe', [])):
         if len(row) < 2:
             continue
-        field, value = row[0].strip().casefold(), row[1].strip()
+        field, value = row[0].strip(), row[1].strip()
         if field in {'field', 'property'} or not field:
             continue
-        metadata[field] = _parse_metadata_value(field, value)
+        raw_metadata_rows.append((field, value))
+
+    locale_labels = {'languagelocale', 'locale', 'language', 'language/locale'}
+    localized_locale_labels = {
+        labels['languageLocale'].casefold() for labels in RECIPE_FIELD_LABELS.values()
+    }
+    if not raw_metadata_rows or raw_metadata_rows[0][0].casefold() not in locale_labels | localized_locale_labels:
+        raise ValueError('languageLocale must be the first property in the Recipe table')
+    locale = canonical_locale(raw_metadata_rows[0][1])
+    metadata['languagelocale'] = locale
+    localized_labels = RECIPE_FIELD_LABELS.get(locale, {})
+    field_aliases = {label.casefold(): field.casefold() for field, label in localized_labels.items()}
+    metadata_rows = []
+    for field, value in raw_metadata_rows[1:]:
+        normalized = field.casefold()
+        if normalized in locale_labels or normalized in localized_locale_labels:
+            raise ValueError('include languageLocale only once, as the first property in the Recipe table')
+        field = field_aliases.get(normalized, normalized)
+        if field not in _METADATA_FIELDS:
+            raise ValueError(f'unknown Recipe table property {field!r}')
+        if field in metadata:
+            raise ValueError(f'duplicate Recipe table property {field!r}')
+        metadata_rows.append((field, value))
+    for field, value in metadata_rows:
+        metadata[field] = _parse_metadata_value(field, value, locale)
 
     nutrients = []
     for row in _table_rows(sections.get('nutrition', [])):
@@ -77,11 +130,14 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
             item = item[: annotation.start()].strip()
         if not isinstance(details, dict):
             raise ValueError('mc-ingredient annotation must be a JSON object')
+        unit = details.get('unit', '')
+        if unit:
+            unit = resolve_markdown_option('ingredient_unit', str(unit), locale)['unit_name']
         ingredients.append(
             {
                 'name': item,
                 'amount': details.get('amount', ''),
-                'unit': details.get('unit', ''),
+                'unit': unit,
                 'isOptional': details.get('isOptional', False),
             }
         )
@@ -151,6 +207,10 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
     ):
         if key in metadata:
             payload[field] = metadata[key]
+    try:
+        validate_recipe_options(payload, locale)
+    except RuntimeError as exc:
+        raise ValueError(str(exc)) from exc
     return payload, recipe_id, thumbnail_path, details_image_path
 
 
@@ -224,13 +284,14 @@ def _create_thumbnail(source: Path, target: Path) -> Path:
     return target
 
 
-def _parse_metadata_value(field: str, value: str):
+def _parse_metadata_value(field: str, value: str, locale: str = 'en-US'):
     value = value.strip().strip('`')
     if field == 'servings':
         match = re.fullmatch(r'(\d+)\s*\(([^()]+)\)', value)
         if not match or int(match.group(1)) < 1 or not match.group(2).strip():
             raise ValueError('servings must include a positive amount and unit, e.g. 4 (frasco)')
-        return int(match.group(1)), match.group(2).strip()
+        unit = resolve_markdown_option('serving_unit', match.group(2).strip(), locale)['unit_name']
+        return int(match.group(1)), unit
     if field in {'devicetypeids', 'categoryids'}:
         try:
             parsed = json.loads(value)
@@ -238,8 +299,15 @@ def _parse_metadata_value(field: str, value: str):
             parsed = [item.strip() for item in value.split(',') if item.strip()]
         if not isinstance(parsed, list):
             parsed = [parsed]
-        return [int(item) for item in parsed]
-    if field in {'recipeid', 'preparationtime', 'readyintime', 'complexityid'}:
+        option_field = 'device' if field == 'devicetypeids' else 'category'
+        result = []
+        for item in parsed:
+            try:
+                result.append(int(item))
+            except (TypeError, ValueError):
+                result.append(resolve_markdown_option(option_field, str(item), locale)['id'])
+        return result
+    if field in {'recipeid', 'preparationtime', 'readyintime'}:
         if field == 'recipeid':
             link = re.fullmatch(r'\[[^\]]+\]\((https?://[^)]+)\)', value)
             if link:
@@ -248,6 +316,11 @@ def _parse_metadata_value(field: str, value: str):
                     raise ValueError('recipeId link must include one recipe-id query parameter')
                 value = identifiers[0]
         return int(value)
+    if field == 'complexityid':
+        try:
+            return int(value)
+        except ValueError:
+            return resolve_markdown_option('complexity', value, locale)['id']
     return value
 
 
@@ -281,7 +354,7 @@ def main() -> int:
                 else:
                     asset_sidecar.write_text(f'{asset}\n', encoding='utf-8')
             print(f'Converted {path} -> {target}')
-        except (OSError, ValueError, TypeError) as exc:
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
             failed = True
             print(f'{path}: {exc}', file=sys.stderr)
     output_file = os.environ.get('GITHUB_OUTPUT')

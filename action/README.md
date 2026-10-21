@@ -15,13 +15,13 @@ A simple weeknight soup.
 
 ## Recipe
 
-| Field | Value |
+| Campo | Valor |
 | --- | --- |
-| languageLocale | en-US |
-| deviceTypeIds | 13 |
-| servings | 4 (bowls) |
-| preparationTime | 10 |
-| readyInTime | 35 |
+| Idioma | pt-PT |
+| Tipo de aparelho | Monsieur Cuisine connect |
+| Doses | 4 (porções) |
+| Tempo de preparação | 10 |
+| Tempo total | 35 |
 
 ## Ingredients
 
@@ -36,7 +36,7 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required table fields: `languageLocale`, `deviceTypeIds` (one or more integer IDs; comma-separated values are accepted), and `servings` as a positive count followed by its unit in parentheses, such as `4 (bowls)` or `2 (frasco)`. Required Markdown heading: recipe title as the first-level heading. Optional table fields: `recipeId` (positive integer or Monsieur Cuisine recipe link; selects update instead of create when publishing), `ingredientGroupName`, `preparationTime`, `readyInTime`, `categoryIds`, `complexityId`, `hintsAndTips`, and `nutrients`. Recipes are privately published by default; the action uses the API's `private-publish` status. Status is managed by the action rather than Markdown.
+Required table fields: the locale field must be the first property and must match a locale supported by the Monsieur Cuisine website; device type (one or more integer IDs or localized device names; comma-separated values are accepted); and servings as a positive count followed by a unit from that locale's serving-unit list. Category and complexity values can also use IDs or their localized names. Serving and ingredient units are checked against the selected locale. Recipe table labels can use the localized labels for that locale shown above or the existing CLI property names (for example, `languageLocale`, `deviceTypeIds`, and `preparationTime`). Optional fields include recipe ID (positive integer or Monsieur Cuisine recipe link; selects update instead of create when publishing), ingredient group, preparation and total time, categories, difficulty, tips, nutrition, thumbnail, and recipe photo. Recipes are privately published by default; the action uses the API's `private-publish` status. Status is managed by the action rather than Markdown.
 
 Nutrition can be supplied as a table under `## Nutrition` with `Nutrient`, `Amount`, and `Unit` columns. Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 
