@@ -108,6 +108,12 @@ Use `--config PATH` to select another config file, or `--env NAME` to merge a na
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, checks, and API research notes.
 
+## Publishing
+
+The GitHub Actions workflow at `.github/workflows/publish.yml` can be called by the release workflows or run manually. To enable manual publishing in a fork, add a repository Actions secret named `twine_token` containing an API token for the selected package index. Then open **Actions → publish → Run workflow**, choose the branch, enter the version to publish, and select `pypi` or `testpypi` as the repository. The workflow runs the tests before building and uploading the package. Use a TestPyPI token when selecting `testpypi`; publishing to PyPI makes the version public, and published versions cannot be reused.
+
+The **get recipe** workflow can also be run manually from **Actions → get recipe → Run workflow**. Add a repository Actions secret named `MC_SESSION_JSON` containing the contents of your CLI `session.json`, then provide either a positive recipe ID or a full Monsieur Cuisine recipe URL. The workflow calls `recipes get` for IDs and `recipes url` for URLs; the session file is written to the runner's temporary directory for the request.
+
 ## Disclaimer
 
 This is an unofficial community project and is not affiliated with or endorsed by monsieur-cuisine.com, Lidl, or their operators. Use it only with an account you are authorized to access, and follow the services' terms and applicable policies.

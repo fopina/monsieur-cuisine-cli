@@ -1,0 +1,53 @@
+name: get recipe
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe:
+        description: Recipe ID or full Monsieur Cuisine recipe URL
+        required: true
+        type: string
+
+jobs:
+  get-recipe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install CLI
+        run: uv sync --frozen --no-dev
+
+      - name: Fetch recipe
+        env:
+          RECIPE: ${{ inputs.recipe }}
+          MC_SESSION_JSON: ${{ secrets.MC_SESSION_JSON }}
+        run: |
+          if [ -z "$MC_SESSION_JSON" ]; then
+            echo "Add the MC_SESSION_JSON repository secret containing your Monsieur Cuisine session.json." >&2
+            exit 1
+          fi
+          session_file="$RUNNER_TEMP/mc-session.json"
+          printf '%s' "$MC_SESSION_JSON" > "$session_file"
+          chmod 600 "$session_file"
+
+          case "$RECIPE" in
+            http://*|https://*)
+              uv run monsieur-cuisine-cli --session-file "$session_file" recipes url "$RECIPE"
+              ;;
+            *)
+              if [[ ! "$RECIPE" =~ ^[1-9][0-9]*$ ]]; then
+                echo "Enter a positive numeric recipe ID or a full HTTP(S) recipe URL." >&2
+                exit 1
+              fi
+              uv run monsieur-cuisine-cli --session-file "$session_file" recipes get "$RECIPE"
+              ;;
+          esac
