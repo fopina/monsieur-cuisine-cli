@@ -64,9 +64,7 @@ def parse_recipe(path: Path) -> tuple[dict, int | None, Path | None, Path | None
         raw_metadata_rows.append((field, value))
 
     locale_labels = {'languagelocale', 'locale', 'language', 'language/locale'}
-    localized_locale_labels = {
-        labels['languageLocale'].casefold() for labels in RECIPE_FIELD_LABELS.values()
-    }
+    localized_locale_labels = {labels['languageLocale'].casefold() for labels in RECIPE_FIELD_LABELS.values()}
     if not raw_metadata_rows or raw_metadata_rows[0][0].casefold() not in locale_labels | localized_locale_labels:
         raise ValueError('languageLocale must be the first property in the Recipe table')
     locale = canonical_locale(raw_metadata_rows[0][1])
