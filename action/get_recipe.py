@@ -13,12 +13,12 @@ from urllib.parse import urlsplit
 
 def main() -> None:
     recipe = os.environ.get('RECIPE', '').strip()
-    session_json = os.environ.get('SESSION_JSON', '')
+    session_token = os.environ.get('SESSION_TOKEN', '')
     output_dir = Path(os.environ.get('OUTPUT_DIR', 'build/recipes'))
     if not recipe:
         raise ValueError('recipe must be a positive recipe ID or a full Monsieur Cuisine recipe URL')
-    if not session_json:
-        raise ValueError('session_json is required to fetch a recipe; pass the contents of session.json')
+    if not session_token:
+        raise ValueError('session_token is required to fetch a recipe; pass the accessToken from session.json')
 
     parsed_url = urlsplit(recipe)
     if parsed_url.scheme.lower() in {'http', 'https'}:
@@ -33,7 +33,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='mc-recipe-') as temp_dir:
         session_path = Path(temp_dir) / 'session.json'
-        session_path.write_text(session_json, encoding='utf-8')
+        session_path.write_text(json.dumps({'accessToken': session_token}), encoding='utf-8')
         session_path.chmod(0o600)
         result = subprocess.run(
             [

@@ -65,7 +65,7 @@ jobs:
 
 Inputs `recipes` and `output` can override the defaults `recipes/**/*.md` and `build/recipes`. A missing recipe match or invalid recipe fails the action. Generated files are named after their Markdown file and written as UTF-8 JSON.
 
-The same action can fetch a recipe instead of converting Markdown. Set `recipe` to a positive numeric ID to run `monsieur-cuisine-cli recipes get`, or to a full HTTP(S) recipe URL to run `monsieur-cuisine-cli recipes url`. The action writes the JSON response as `recipe.json` under `output-directory`. Fetching requires an authenticated CLI session: add the contents of your `session.json` as the `MC_SESSION_JSON` Actions secret in the cookbook repository.
+The same action can fetch a recipe instead of converting Markdown. Set `recipe` to a positive numeric ID to run `monsieur-cuisine-cli recipes get`, or to a full HTTP(S) recipe URL to run `monsieur-cuisine-cli recipes url`. The action writes the JSON response as `recipe.json` under `output-directory`. Fetching requires an authenticated CLI session: add the `accessToken` value from your `session.json` as the `MC_SESSION_TOKEN` Actions secret in the cookbook repository. The CLI refreshes the token if needed.
 
 To fetch a recipe on demand, add this workflow to the cookbook repository as `.github/workflows/get-recipe.yml`. The **Actions → Get recipe → Run workflow** form accepts either an ID or URL, and the fetched response is available as a downloadable artifact.
 
@@ -86,7 +86,7 @@ jobs:
         uses: fopina/monsieur-cuisine-cli@main
         with:
           recipe: ${{ inputs.recipe }}
-          session_json: ${{ secrets.MC_SESSION_JSON }}
+          session_token: ${{ secrets.MC_SESSION_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: recipe-json

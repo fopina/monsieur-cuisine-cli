@@ -12,8 +12,8 @@ inputs:
   recipe:
     description: Optional recipe ID or full Monsieur Cuisine recipe URL to fetch instead of converting Markdown files.
     required: false
-  session_json:
-    description: Contents of the CLI session.json file, required when fetching a recipe.
+  session_token:
+    description: CLI API access token from session.json, required when fetching a recipe.
     required: false
 outputs:
   output-directory:
@@ -45,6 +45,6 @@ runs:
       shell: bash
       env:
         RECIPE: ${{ inputs.recipe }}
-        SESSION_JSON: ${{ inputs.session_json }}
+        SESSION_TOKEN: ${{ inputs.session_token }}
         OUTPUT_DIR: ${{ inputs.output }}
       run: python "${{ github.action_path }}/action/get_recipe.py"
