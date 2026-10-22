@@ -48,7 +48,7 @@ The action has three operations:
 
 - `validate` (the default) parses every matching Markdown recipe, checks required fields and localized dropdown values, and writes JSON payloads.
 - `publish` converts the Markdown, creates or updates private recipes, and opens a pull request recording recipe IDs for recipes whose IDs are not in the Markdown yet.
-- `get` fetches one recipe by ID or full Monsieur Cuisine URL and writes the response to `recipe.json`.
+- `get` fetches one recipe by ID or full Monsieur Cuisine URL, writes the response to `recipe.json`, and creates a cookbook Markdown file.
 
 For `validate` and `publish`, `recipes` selects Markdown files with a glob and defaults to `recipes/**/*.md`. The optional `recipe_files` input accepts a JSON array of exact repo-relative Markdown paths and takes precedence over the glob. Use it when a workflow should publish only the files changed by a push.
 
@@ -101,7 +101,7 @@ jobs:
 
 Configure `MC_API_ACCESS_TOKEN` with the `accessToken` value from the CLI `session.json`. `GH_SECRETS_WRITE_TOKEN` is optional; when supplied with permission to update repository Actions secrets, the action saves a rotated API token back to `MC_API_ACCESS_TOKEN`. Without it, update that secret if the API token is refreshed during a run. The workflow's `GITHUB_TOKEN` needs `contents: write` and `pull-requests: write`; repository settings must also allow GitHub Actions to create pull requests.
 
-To fetch an existing recipe on demand, set the `recipe` input to a positive numeric ID or a full HTTP(S) URL. IDs run `recipes get`; URLs run `recipes url`.
+To fetch an existing recipe on demand, set the `recipe` input to a positive numeric ID or a full HTTP(S) URL. IDs run `recipes get`; URLs run `recipes url`. The action writes the Markdown file under `recipes/` by default; set `markdown_output` to choose another directory. The `markdown-file` action output contains its path. Numeric IDs are retained in the Markdown `recipeId` field; URL imports omit that field so publishing creates a cookbook-owned copy.
 
 ```yaml
 name: Get recipe
