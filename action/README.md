@@ -1,6 +1,6 @@
 # Monsieur Cuisine cookbook action
 
-This composite GitHub Action validates Markdown recipes and converts each one to a JSON payload accepted by `monsieur-cuisine-cli recipes create --data`.
+This composite GitHub Action validates Markdown recipes, publishes them through the CLI, fetches existing recipes, and opens follow-up pull requests with assigned recipe IDs.
 
 ## Recipe format
 
