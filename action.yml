@@ -9,6 +9,9 @@ inputs:
     description: Glob for recipe Markdown files.
     required: false
     default: recipes/**/*.md
+  recipe_files:
+    description: JSON array of exact, repo-relative Markdown file paths to convert. Overrides recipes.
+    required: false
   output:
     description: Directory where JSON payloads are written.
     required: false
@@ -53,6 +56,7 @@ runs:
       shell: bash
       env:
         RECIPE_GLOB: ${{ inputs.recipes }}
+        RECIPE_FILES_JSON: ${{ inputs.recipe_files }}
         OUTPUT_DIR: ${{ inputs.output }}
       run: python "${{ github.action_path }}/action/convert.py"
     - name: Install CLI for recipe operations
