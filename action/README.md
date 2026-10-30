@@ -20,6 +20,7 @@ A simple weeknight soup.
 | Idioma | pt-PT |
 | Tipo de aparelho | Monsieur Cuisine connect |
 | Doses | 4 (porções) |
+| Dificuldade | fácil |
 | Tempo de preparação | 10 |
 | Tempo total | 35 |
 
@@ -36,7 +37,7 @@ A simple weeknight soup.
 3. Blend for 1 minute, increasing gradually to speed 8.
 ```
 
-Required table fields: the locale field must appear once and match a locale supported by the Monsieur Cuisine website; device type (one or more integer IDs or localized device names; comma-separated values are accepted); and servings as a positive count followed by a unit from that locale's serving-unit list. Category and complexity values can also use IDs or their localized names. Serving and ingredient units are checked against the selected locale. Recipe table labels can use the localized labels for that locale shown above or the existing CLI property names (for example, `languageLocale`, `deviceTypeIds`, and `preparationTime`). Optional fields include recipe ID (positive integer or Monsieur Cuisine recipe link; selects update instead of create when publishing), ingredient group, preparation and total time, categories, difficulty, tips, nutrition, thumbnail, and recipe photo. Recipes are privately published by default; the action uses the API's `private-publish` status. Status is managed by the action rather than Markdown.
+Required table fields: the locale field must appear once and match a locale supported by the Monsieur Cuisine website; device type (one or more integer IDs or localized device names; comma-separated values are accepted); servings as a positive count followed by a unit from that locale's serving-unit list; and complexity (an integer ID or localized complexity name). Complexity is required in Markdown and validated in PRs so recipes are ready to publish after merge; the API's draft operation itself can omit it. Category values can also use IDs or localized names. Serving and ingredient units are checked against the selected locale. Recipe table labels can use the localized labels for that locale shown above or the existing CLI property names (for example, `languageLocale`, `deviceTypeIds`, `complexityId`, and `preparationTime`). Optional fields include recipe ID (positive integer or Monsieur Cuisine recipe link; selects update instead of create when publishing), ingredient group, preparation and total time, categories, tips, nutrition, thumbnail, and recipe photo. Recipes are privately published by default; the action uses the API's `private-publish` status. Status is managed by the action rather than Markdown.
 
 Nutrition can be supplied as a table under `## Nutrition` with `Nutrient`, `Amount`, and `Unit` columns. Ingredient lines are converted to ingredient entries with their text in `name`; steps become manual recipe steps with `mode: null`. The action does not infer machine modes, quantities, or units from prose. Review the generated JSON before publishing, and use `recipes get` to inspect existing recipes for the exact device-specific mode schema your cooker uses.
 
@@ -63,13 +64,19 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: fopina/monsieur-cuisine-cli@main
         with:
           operation: validate
 ```
 
-For a same-repository recipe pull request, run `draft` on the changed recipe files. It creates a draft only when no recipe ID or matching account recipe exists, then pushes the ID into the existing PR branch. It does not modify an existing recipe while the PR is unmerged. The workflow needs `contents: write` to update that branch; PRs from forks are skipped because their workflows do not receive write credentials. If a PR is abandoned after creating a draft, that draft may remain in the account.
+### Recipe pull-request workflow
+
+When a new recipe is opened as a same-repository pull request, the `draft` operation creates the recipe immediately in the connected Lidl/Monsieur Cuisine account with draft status. It then writes the returned `recipeId` into that recipe's Markdown file and commits the ID to the existing PR branch. This lets the PR review the exact recipe identity that will be published, without opening a second PR. The draft is not publicly published while the recipe PR is open.
+
+After the recipe PR is merged, the publish workflow uses that `recipeId` to update the same account recipe to private-published status. Existing recipes are only associated with the PR during draft preparation; they are not modified until merge. PR validation runs independently and requires all recipe fields, including complexity, even though the API's draft operation itself can omit complexity.
+
+The draft workflow needs `contents: write` to update the existing same-repository PR branch and `MC_API_ACCESS_TOKEN` to create or find the account recipe. PRs from forks are skipped because their workflows do not receive write credentials. If a PR is abandoned after creating a draft, that draft may remain in the account. The workflow does not need the repository setting that allows Actions to create pull requests, because it updates the existing PR rather than opening a new one.
 
 ```yaml
 name: Prepare recipe drafts
@@ -83,7 +90,7 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
@@ -125,7 +132,7 @@ jobs:
     if: ${{ github.event_name == 'push' || inputs.confirm_publish }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: fopina/monsieur-cuisine-cli@main
         with:
           operation: publish
@@ -150,7 +157,7 @@ jobs:
   get-recipe:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: recipe
         uses: fopina/monsieur-cuisine-cli@main
         with:
