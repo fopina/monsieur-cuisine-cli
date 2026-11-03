@@ -381,7 +381,7 @@ def _parse_metadata_value(field: str, value: str, locale: str = 'en-US'):
             except (TypeError, ValueError):
                 result.append(resolve_markdown_option(option_field, str(item), locale)['id'])
         return result
-    if field in {'recipeid', 'preparationtime', 'readyintime'}:
+    if field in {'recipeid', 'originalrecipeid', 'preparationtime', 'readyintime'}:
         if field == 'recipeid':
             link = re.fullmatch(r'\[[^\]]+\]\((https?://[^)]+)\)', value)
             if link:
